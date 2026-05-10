@@ -1,0 +1,8 @@
+.gradle/
+build/
+.moderne/
+.idea/
+*.iml
+.DS_Store
+*~
+*.swp

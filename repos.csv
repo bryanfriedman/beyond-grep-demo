@@ -1,0 +1,5 @@
+origin,path,cloneUrl,branch,org1
+github.com,spring-petclinic/spring-petclinic-microservices,https://github.com/spring-petclinic/spring-petclinic-microservices,main,demo
+github.com,sqshq/piggymetrics,https://github.com/sqshq/piggymetrics,master,demo
+github.com,macrozheng/mall,https://github.com/macrozheng/mall,master,demo
+github.com,ewolff/microservice,https://github.com/ewolff/microservice,master,demo

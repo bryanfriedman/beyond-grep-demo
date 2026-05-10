@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+#
+# Master entry point for the Beyond grep demo. Dispatches to the
+# subcommand scripts in scripts/.
+
+set -u
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$SCRIPT_DIR/scripts"
+
+usage() {
+  cat <<EOF
+Usage: ./demo <command> [args]
+
+Commands:
+  init [--skip-build|--skip-index|--clean|--reset]
+                                  One-time setup: clone repos, build LSTs, index.
+
+  reset [media|petclinic|all]     Per-rehearsal reset of the agent lanes.
+                                  Default target: all.
+
+  trap status|enable|disable      Toggle the optional 'trap' variant of the
+                                  media lane (recipe leaves a setErrorHandler
+                                  call the agent has to fix manually).
+
+  start no|with [media|petclinic] [--yolo] [extra claude args...]
+                                  Launch the agent in a lane.
+
+  seq demo1                       Run the Demo 1 query sequence with the
+                                  press-Enter shell sequencer.
+
+  tokens <session-id>             Report token usage for a Claude Code session.
+
+Each subcommand also exists as a standalone script in scripts/ and can be
+invoked directly. The lane symlinks for ./start.sh inside no-trigrep/ and
+with-trigrep/ remain functional independently of this dispatcher.
+
+Examples:
+  ./demo init
+  ./demo reset media
+  ./demo trap enable
+  ./demo start with media --yolo
+  ./demo seq demo1
+  ./demo tokens 7f3c1234-…-abcd
+EOF
+}
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  init)
+    exec "$SCRIPTS/init.sh" "$@"
+    ;;
+  reset)
+    exec "$SCRIPTS/reset-agent.sh" "$@"
+    ;;
+  trap)
+    exec "$SCRIPTS/trap-mode.sh" "$@"
+    ;;
+  start)
+    exec "$SCRIPTS/start.sh" "$@"
+    ;;
+  seq)
+    seq_name="${1:-}"
+    if [ -z "$seq_name" ]; then
+      echo "Usage: ./demo seq demo1" >&2
+      exit 1
+    fi
+    seq_file="$SCRIPT_DIR/demos/sequences/${seq_name}.txt"
+    if [ ! -f "$seq_file" ]; then
+      echo "Sequence file not found: $seq_file" >&2
+      exit 1
+    fi
+    exec "$SCRIPTS/run-sequence.sh" "$seq_file"
+    ;;
+  tokens)
+    exec "$SCRIPTS/session-tokens.sh" "$@"
+    ;;
+  -h|--help|help|"")
+    usage
+    ;;
+  *)
+    echo "Unknown command: $cmd" >&2
+    echo "" >&2
+    usage >&2
+    exit 1
+    ;;
+esac
