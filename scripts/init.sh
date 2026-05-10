@@ -183,17 +183,10 @@ done
 
 if [ "$SKIP_BUILD" = false ]; then
   echo "==> Building LSTs for working set (this may take a while)..."
-  for repo in "$WORKING_SET_DIR"/*/*; do
-    [ -d "$repo" ] || continue
-    echo "    building $repo"
-    mod build "$repo" || echo "    (build failed for $repo; continuing)"
-  done
+  mod build "$WORKING_SET_DIR" || echo "    (working-set build had failures; continuing)"
 
   echo "==> Building LSTs for Demo 2 with-trigrep lane..."
-  for path in "$MEDIA_PATH" "$PETCLINIC_PATH"; do
-    echo "    building $WITH_DIR/$path"
-    mod build "$WITH_DIR/$path" || echo "    (build failed for $path; Trigrep will be limited)"
-  done
+  mod build "$WITH_DIR" || echo "    (with-trigrep build had failures; Trigrep will be limited)"
 else
   echo "==> Skipping LST builds (--skip-build)"
 fi
@@ -202,9 +195,7 @@ if [ "$SKIP_INDEX" = false ] && [ "$SKIP_BUILD" = false ]; then
   echo "==> Building trigram search indexes for working set..."
   mod postbuild search index "$WORKING_SET_DIR" || echo "    (working-set index build failed)"
   echo "==> Building trigram search indexes for Demo 2 with-trigrep lane..."
-  for path in "$MEDIA_PATH" "$PETCLINIC_PATH"; do
-    mod postbuild search index "$WITH_DIR/$path" || echo "    (index build failed for $path)"
-  done
+  mod postbuild search index "$WITH_DIR" || echo "    (with-trigrep index build failed)"
 elif [ "$SKIP_INDEX" = true ]; then
   echo "==> Skipping trigram index build (--skip-index)"
   echo "    Run \`mod postbuild search index <path>\` before \`mod search\`."
