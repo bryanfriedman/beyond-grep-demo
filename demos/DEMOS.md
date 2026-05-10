@@ -4,7 +4,7 @@ Two demos, both built on the same LST substrate:
 
 | # | Demo | Surface | Where it runs |
 |---|---|---|---|
-| 1 | Trigrep CLI across the multi-repo working set, ending with a `--last-search` recipe handoff | `mod search` → `mod run --last-search` | `multi-repo/` via [sequences/demo1.txt](sequences/demo1.txt) |
+| 1 | Trigrep CLI across the working set, ending with a `--last-search` recipe handoff | `mod search` → `mod run --last-search` | `working-set/` via [sequences/demo1.txt](sequences/demo1.txt) |
 | 2 | Agent with Trigrep MCP on a single repo, two example prompts | Claude Code | `./demo start with <repo>` |
 
 A separate platform-only opener (a recipe run from the Moderne UI) is performed live and is not scaffolded here.
@@ -15,7 +15,7 @@ A separate platform-only opener (a recipe run from the Moderne UI) is performed 
 ./demo init
 ```
 
-Clones the multi-repo set, provisions both Demo 2 single-repo lanes, builds LSTs, and indexes them. See [../README.md](../README.md) for flags.
+Clones the working set, provisions both Demo 2 single-repo lanes, builds LSTs, and indexes them. See [../README.md](../README.md) for flags.
 
 ---
 
@@ -33,7 +33,7 @@ Clones the multi-repo set, provisions both Demo 2 single-repo lanes, builds LSTs
 
 The sequencer renders each block as a fake shell prompt + the command on the next line, narration cues showing as `# comments` above. Press Enter to advance — at each step you can edit the command inline before running it (bash 4+ `read -e -i`). Empty input skips a block; Ctrl-C exits cleanly.
 
-To iterate, edit [sequences/demo1.txt](sequences/demo1.txt). The first block is `cd multi-repo`; everything after runs from that working directory. Pull additional candidate queries from [QUERIES.md](QUERIES.md).
+To iterate, edit [sequences/demo1.txt](sequences/demo1.txt). The first block is `cd working-set`; everything after runs from that working directory. Pull additional candidate queries from [QUERIES.md](QUERIES.md).
 
 ---
 
@@ -119,4 +119,4 @@ With the trap on, the recipe leaves `template.setErrorHandler(...)` in `HttpClie
 - **`--last-search` errors**: run a `mod search` first in the same working directory; `--last-search` reads from CLI state in `~/.moderne/`.
 - **Agent in `with-trigrep/` doesn't use MCP**: confirm `.mcp.json` exists and `mod` is on PATH. Re-launch `claude` — MCP servers register at startup.
 - **MCP tools show only `build_status`**: give it 15–30 s. Tools register progressively as the MCP server builds the LST internally. Use `/mcp` to check status.
-- **Build failure on a multi-repo clone**: `./demo init --skip-build`, then build the others by hand. The working set is permissive — drop a repo if it costs more than it earns.
+- **Build failure on a working-set clone**: `./demo init --skip-build`, then build the others by hand. The working set is permissive — drop a repo if it costs more than it earns.

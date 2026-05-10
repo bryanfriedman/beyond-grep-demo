@@ -1,21 +1,14 @@
-# Demo 1 — Trigrep CLI across the working set, ending with --last-search.
-# Each block: a "# " narration cue, a blank line, then the command. Replace freely.
-
 ## Lines starting with `##` are private notes (presenter-only, not rendered).
-##
-## CLI 4.x query gotchas:
-##  - Filters must be SEPARATE shell args, not quoted into one string.
-##      ✓ mod search . returns:ResponseEntity
-##      ✗ mod search . 'returns:ResponseEntity'   (silently 0 in some states)
-##  - `type:method` is a silent no-op; just use `returns:` / `throws:` directly.
-##  - `type:symbol` is flaky — prefer `sym:Foo` for symbol search.
-##  - `visibility:public` works alone and combines with `returns:` / `throws:`.
+## Lines starting with `#` print to `stdout` before waiting for input
+## Input is pre-populated, but can be changed
+
+## Demo 1 — Trigrep CLI across the working set, ending with --last-search.
 
 # Move into the working set so `mod search .` covers the whole portfolio.
-cd multi-repo
+cd working-set
 
 # Open with familiar syntax — a literal scan, the kind of thing you'd reach for grep for.
-mod search . '"RequestMapping"'
+mod search . RequestMapping
 
 # Regex — finder-method names across every repo. Same shape as grep.
 mod search . '/find\w+By\w+/'
@@ -42,7 +35,7 @@ mod search . 'struct:restTemplate.exchange(:[args])'
 
 # Cheap pass: literal `@RestController` anywhere in source.
 # Catches imports, real usages, comments — wide net.
-mod search . '"@RestController"'
+mod search . @RestController
 
 # Precise pass: only on the repos the prior search matched.
 # FindAnnotations resolves the FQN and reports actual annotation usage on

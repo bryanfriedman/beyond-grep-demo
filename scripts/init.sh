@@ -2,7 +2,7 @@
 #
 # Initializes the Beyond grep demo environment.
 #
-# Clones the multi-repo set into multi-repo/ for Demo 1, and provisions
+# Clones the working set into working-set/ for Demo 1, and provisions
 # two single-repo Demo 2 candidates (streamlist/media-aggregator from
 # media-aggregator-app/ and spring-projects/spring-petclinic cloned from GitHub) into
 # both no-trigrep/ and with-trigrep/. Both are Gradle-based to dodge the
@@ -21,7 +21,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEMO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPOS_CSV="$DEMO_ROOT/repos.csv"
-MULTI_DIR="$DEMO_ROOT/multi-repo"
+WORKING_SET_DIR="$DEMO_ROOT/working-set"
 NO_DIR="$DEMO_ROOT/no-trigrep"
 WITH_DIR="$DEMO_ROOT/with-trigrep"
 
@@ -63,8 +63,8 @@ done
 
 if [ "$CLEAN" = true ]; then
   echo "==> Cleaning demo directories..."
-  chmod -R u+w "$MULTI_DIR" "$NO_DIR" "$WITH_DIR" "$DEMO_ROOT/.moderne" 2>/dev/null || true
-  rm -rf "$MULTI_DIR" "$NO_DIR" "$WITH_DIR" "$DEMO_ROOT/.moderne"
+  chmod -R u+w "$WORKING_SET_DIR" "$NO_DIR" "$WITH_DIR" "$DEMO_ROOT/.moderne" 2>/dev/null || true
+  rm -rf "$WORKING_SET_DIR" "$NO_DIR" "$WITH_DIR" "$DEMO_ROOT/.moderne"
   echo "==> Clean complete."
   [ "$RESET" = false ] && exit 0
 fi
@@ -74,11 +74,11 @@ if [ ! -f "$REPOS_CSV" ]; then
   exit 1
 fi
 
-# ─── multi-repo (Demos 1 & 2) ─────────────────────────────────────────────────
+# ─── working-set (Demos 1 & 2) ────────────────────────────────────────────────
 
-echo "==> Syncing multi-repo set into multi-repo/..."
-mkdir -p "$MULTI_DIR"
-mod git sync csv "$MULTI_DIR" "$REPOS_CSV" --with-sources --yes || true
+echo "==> Syncing working set into working-set/..."
+mkdir -p "$WORKING_SET_DIR"
+mod git sync csv "$WORKING_SET_DIR" "$REPOS_CSV" --with-sources --yes || true
 
 # ─── single-repo provisioning (Demo 2) ────────────────────────────────────────
 #
@@ -227,8 +227,8 @@ done
 # ─── builds and indexes ───────────────────────────────────────────────────────
 
 if [ "$SKIP_BUILD" = false ]; then
-  echo "==> Building LSTs for multi-repo set (this may take a while)..."
-  for repo in "$MULTI_DIR"/*/*; do
+  echo "==> Building LSTs for working set (this may take a while)..."
+  for repo in "$WORKING_SET_DIR"/*/*; do
     [ -d "$repo" ] || continue
     echo "    building $repo"
     mod build "$repo" || echo "    (build failed for $repo; continuing)"
@@ -244,8 +244,8 @@ else
 fi
 
 if [ "$SKIP_INDEX" = false ] && [ "$SKIP_BUILD" = false ]; then
-  echo "==> Building trigram search indexes for multi-repo set..."
-  mod postbuild search index "$MULTI_DIR" || echo "    (multi-repo index build failed)"
+  echo "==> Building trigram search indexes for working set..."
+  mod postbuild search index "$WORKING_SET_DIR" || echo "    (working-set index build failed)"
   echo "==> Building trigram search indexes for Demo 2 with-trigrep lane..."
   for path in "$MEDIA_PATH" "$PETCLINIC_PATH"; do
     mod postbuild search index "$WITH_DIR/$path" || echo "    (index build failed for $path)"
@@ -257,7 +257,7 @@ fi
 
 echo ""
 echo "==> Init complete."
-echo "    Demo 1 (multi-repo CLI):     ./demo seq demo1"
+echo "    Demo 1 (working-set CLI):    ./demo seq demo1"
 echo "    Demo 2 (single-repo agent):"
 echo "      media:      ./demo start with media --yolo       /   ./demo start no media --yolo"
 echo "      petclinic:  ./demo start with petclinic --yolo   /   ./demo start no petclinic --yolo"

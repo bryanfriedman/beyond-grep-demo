@@ -2,20 +2,25 @@
 
 A curated list of Trigrep queries to draw from when iterating on Demo 1. The sequence at [sequences/demo1.txt](sequences/demo1.txt) is the playlist; this file is the bench.
 
-`mod search` needs a path argument first. From `multi-repo/`, use `.`.
+`mod search` needs a path argument first. From `working-set/`, use `.`.
 
 ## Tier 1 — Familiar syntax
 
 ```bash
-mod search . '"RestTemplate"'
-mod search . '"@RestController"'
-mod search . '/RestTemplate\w*/'
+mod search . RestTemplate
+mod search . @RestController
+mod search . @Autowired
+mod search . '/Rest(Template|Client|Operations)/'   # alternation across the HTTP-client family
+mod search . '/\bRestController\b/'                  # word-anchored — skips RestControllerAdvice, MyRestController
 mod search . '/(get|post|put|delete)For\w+/'
+mod search . '/@(Get|Post|Put|Delete|Patch)Mapping/'
 mod search . sym:RestTemplate
 mod search . sym:WebClient
 mod search . sym:RestClient
 mod search . sym:Owner
 mod search . 'sym:/Client$/'
+mod search . sym:RestTemplate or sym:WebClient   # disjunction — lowercase `or`
+mod search . @RestController -test               # NOT via `-` prefix
 ```
 
 ## Tier 2 — Semantic filters
@@ -35,6 +40,8 @@ mod search . extends:RestTemplate
 
 `:[hole]` matches balanced delimiters (parens, braces, strings). Templates are whitespace-sensitive between literal tokens — if a query returns zero matches, try collapsing spaces around braces.
 
+Typed holes (per the docs) sharpen what the hole is allowed to match: `:[name:e]` balanced expression, `:[name:id]` identifier, `:[name:g]` generics including angle brackets, `:[name:block]` balanced braces, `:[name:stmt]` to next semicolon. Plain `:[name]` is non-greedy and usually works for argument lists, but `:[args:e]` is safer when args contain nested parens/strings.
+
 ```bash
 mod search . 'struct:restTemplate.exchange(:[args])'
 mod search . 'struct:restTemplate.getForEntity(:[args])'
@@ -44,12 +51,15 @@ mod search . 'struct:new RestTemplate()'
 mod search . 'struct:new RestTemplate(:[args])'
 mod search . 'struct:@RequestMapping(:[args])'
 mod search . 'struct:@GetMapping(:[args])'
+mod search . 'struct:@Autowired :[type:id] :[field:id]'   # field-injection candidates
+mod search . 'struct:ResponseEntity<:[type:g]>'           # typed REST responses
+mod search . 'struct:@Value(":[expr]") :[type:id] :[field:id]'  # property-injected fields
 ```
 
 ## Tier 4 — Bridge to a recipe (`--last-search`)
 
 ```bash
-mod search . '"@RestController"'
+mod search . @RestController
 mod run . --last-search --recipe=org.openrewrite.java.search.FindAnnotations \
   -PannotationPattern='@org.springframework.web.bind.annotation.RestController'
 
@@ -60,15 +70,19 @@ mod run . --last-search --recipe=org.openrewrite.java.search.FindTypes \
 
 ## CLI 4.x query rules worth memorizing
 
-- **Filters must be separate shell args** — never quote the whole query into one string.
+- **Filters must be separate shell args** — never quote the whole query into one string. The CLI treats a single-arg query as a literal phrase (it re-emits it quoted in the `Searching for:` line) and almost always returns 0 matches.
   ```
   ✓  mod search . returns:ResponseEntity
   ✗  mod search . 'returns:ResponseEntity'
+  ✓  mod search . visibility:public throws:IOException
+  ✗  mod search . 'visibility:public throws:IOException'
   ```
-- **For `type:symbol` with a bareword, the filter must come first** — and even then it's flaky. Prefer `sym:Foo`.
-- `type:method` is a silent no-op. Use `returns:` / `throws:` directly.
-- `AND` / `OR` / `NOT` and `file:` / `path:` / `lang:` are not parsed.
-- Quote Sourcegraph literals: `'"RestTemplate"'`. Without quotes, they're parsed as field expressions.
+- For order-sensitive filters (`type:`, `case:`, `count:`, `patternType:`), the filter must come **before** the term it modifies. `type:symbol Person` filters; `Person type:symbol` is silently equivalent to bare `Person`.
+- `type:` accepts only `file` / `path` / `symbol`. `type:method` and `type:annotation` are silent no-ops — use `returns:` / `throws:` for methods and `'"@AnnotationName"'` for annotations.
+- `type:symbol Person` is the narrow lens (the `Person` symbol itself); `sym:Person` is a substring match on FQN, so it picks up `PersonRepository` and every method inside `class Person`. Bare `Person` is broader still — also matches imports, comments, string literals.
+- Boolean operators: implicit AND between space-separated terms, lowercase `or` for disjunction, leading `-` for NOT. Capitalized `AND` / `OR` / `NOT` are not parsed as operators.
+- Inner double-quotes around a literal only matter when it would otherwise be misparsed: contains a colon (`'"version:1"'` keeps `version:` from being read as a filter), spans multiple words (`'"hello world"'` vs two ANDed terms), or shadows an operator (`'"or"'` for the literal word, `'"-test"'` to keep the leading dash). For bare alphanumeric tokens, `RestTemplate` and `'"RestTemplate"'` parse identically.
+- Path/language filters (`file:`, `path:` Sourcegraph alias, `lang:` / `language:` / `l:`) are documented per [PR #675](https://github.com/moderneinc/moderne-docs/pull/675); see FINDINGS.md for the local-test caveat.
 - Recipe options use bare `-PoptionName=value`, not `-Poption.optionName=`.
 
 ## A note on `sym:`

@@ -15,8 +15,8 @@
 #   4. Pre-build the LST for the with-trigrep lane so the agent doesn't
 #      have to wait at session start.
 #
-# Why not just `./init.sh --reset`: that also re-syncs the multi-repo
-# working set (Demos 1 & 2), which doesn't need touching. This is the
+# Why not just `./init.sh --reset`: that also re-syncs the working set
+# (Demos 1 & 2), which doesn't need touching. This is the
 # lighter, faster reset for the agent demo only.
 
 set -u

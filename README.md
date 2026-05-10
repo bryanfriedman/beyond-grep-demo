@@ -4,7 +4,7 @@ Demo materials for the _Beyond grep: how semantic code search makes large-scale 
 
 | # | Demo | Surface |
 |---|---|---|
-| 1 | Trigrep CLI across the multi-repo working set, ending with a `--last-search` recipe handoff | `mod search` → `mod run --last-search` |
+| 1 | Trigrep CLI across the working set, ending with a `--last-search` recipe handoff | `mod search` → `mod run --last-search` |
 | 2 | Agent with Trigrep MCP on a single repo (two example prompts) | Claude Code |
 
 Demos run live; the side-by-side `no-trigrep/` lane and `./demo tokens` are there as a backup / cost-comparison option, not the default flow.
@@ -26,13 +26,13 @@ Demos run live; the side-by-side `no-trigrep/` lane and `./demo tokens` are ther
 ```
 
 This will:
-1. Clone the multi-repo set ([repos.csv](repos.csv)) into `multi-repo/`
+1. Clone the working set ([repos.csv](repos.csv)) into `working-set/`
 2. Provision **two** Demo 2 single-repos into both `no-trigrep/` and `with-trigrep/`:
    - `streamlist/media-aggregator` (curated, copied from `media-aggregator-app/`)
    - `spring-projects/spring-petclinic` (cloned from GitHub)
 3. Drop a `.mcp.json` into each `with-trigrep/` repo (Moderne MCP server)
 4. Drop an `empty-mcp.json` into each `no-trigrep/` repo (zero MCP servers)
-5. Build LSTs and trigram search indexes so `mod search` and `mod mcp` work
+5. Build LSTs and trigram search indexes so `mod search` works
 
 Flags:
 - `--skip-build` — clone only, skip `mod build`
@@ -45,14 +45,14 @@ Flags:
 ```
 .
 ├── README.md                       # this file
-├── repos.csv                       # multi-repo working set (Demo 1)
+├── repos.csv                       # working set (Demo 1)
 ├── demo                            # master entry point; dispatches to scripts/
 ├── demos/
 │   ├── DEMOS.md                    # per-demo walkthrough
 │   ├── QUERIES.md                  # curated Trigrep query catalog
 │   └── sequences/
 │       └── demo1.txt               # Demo 1 query sequence (edit freely)
-├── media-aggregator-app/                        # curated source for the Demo 2 `media` repo
+├── media-aggregator-app/           # curated source for the Demo 2 `media` repo
 │   └── extras/                     # opt-in HttpClientConfig.with-trap.java + README
 ├── scripts/                        # subcommand scripts (also runnable directly)
 │   ├── init.sh                     # ./demo init
@@ -61,7 +61,7 @@ Flags:
 │   ├── trap-mode.sh                # ./demo trap status|enable|disable
 │   ├── run-sequence.sh             # ./demo seq demo1
 │   └── session-tokens.sh           # ./demo tokens <session-id>
-├── multi-repo/                     # generated — synced via mod git sync
+├── working-set/                    # generated — synced via mod git sync
 ├── no-trigrep/                     # generated — agent lane, no MCP
 │   ├── streamlist/media-aggregator
 │   └── spring-projects/spring-petclinic
@@ -79,7 +79,7 @@ See [demos/DEMOS.md](demos/DEMOS.md) for the per-demo walkthrough. For the curat
 ```bash
 ./demo init                              # one-time setup
 
-./demo seq demo1                         # Demo 1 — multi-repo Trigrep CLI + --last-search bridge
+./demo seq demo1                         # Demo 1 — working-set Trigrep CLI + --last-search bridge
 
 ./demo reset media                       # before each Demo 2 rehearsal
 ./demo start with media --yolo           # Demo 2 — agent + Trigrep MCP, media repo
