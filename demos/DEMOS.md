@@ -48,13 +48,6 @@ A single-repo agent demo where Claude Code drives the work through Trigrep MCP t
 
 After `./demo start with <repo> --yolo`, give the terminal ~15–30 s before pasting the prompt — MCP tools register progressively as the LST builds. `/mcp` shows status; wait until the Moderne server reports all 18 tools (or autocomplete `mcp__moderne__find_types`). Petclinic's first build is slower (~60–90 s) because of SB 4 AOT-generated stubs; cached after.
 
-A `no-trigrep/` lane exists for both repos with `empty-mcp.json` (zero MCP servers). If you want to quote a token-delta number live, do an extra run there with the same prompt.
-
-```bash
-./demo start no media --yolo        # or `no petclinic`
-./demo tokens <session-id>          # both sessions, after capturing the IDs
-```
-
 ### Example A — petclinic, Trigrep-driven inventory (shallow)
 
 > **Scenario:** "Before I commit to anything in this real-world Spring sample, I want the agent to give me the lay of the land. What's the dependency-injection style? Where is field-level `@Autowired` still being used? Just the inventory pass — same kind of thing Demo 1 did across the portfolio, narrowed to one repo and driven by an agent that picks the search tools itself."
@@ -95,6 +88,15 @@ document what was deferred.
 What you're watching for: agent calls `find_types` / `trigrep_search` for inventory → `search_recipes` to discover the recipe → `learn_recipe` to read it → `run_recipe` to apply it → manual edits only where the recipe leaves something unfinished. That whole chain happens inside one MCP server.
 
 > Closing line: *"Same LST, third projection. Trigrep is now a tool the agent picks up like any other — and the recipe layer is right alongside it."*
+
+### Optional: side-by-side with `no-trigrep` (token delta)
+
+A natural follow-on to either example: run the same prompt against the `no-trigrep/` lane (zero MCP servers via `empty-mcp.json`) and put the two sessions side by side. The agent falls back to grep + read-each-file, and the token delta is the number to quote live.
+
+```bash
+./demo start no media --yolo        # or `no petclinic`
+./demo tokens <session-id>          # run for both sessions, after capturing the IDs
+```
 
 ### Optional: trap mode for the `media` repo
 
