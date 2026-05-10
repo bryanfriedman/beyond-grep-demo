@@ -19,7 +19,7 @@ mod search . sym:WebClient
 mod search . sym:RestClient
 mod search . sym:Owner
 mod search . 'sym:/Client$/'
-mod search . sym:RestTemplate or sym:WebClient   # disjunction — lowercase `or`
+mod search . sym:RestTemplate or sym:WebClient   # disjunction (case-insensitive — `OR` also works)
 mod search . @RestController -test               # NOT via `-` prefix
 ```
 
@@ -80,9 +80,9 @@ mod run . --last-search --recipe=org.openrewrite.java.search.FindTypes \
 - For order-sensitive filters (`type:`, `case:`, `count:`, `patternType:`), the filter must come **before** the term it modifies. `type:symbol Person` filters; `Person type:symbol` is silently equivalent to bare `Person`.
 - `type:` accepts only `file` / `path` / `symbol`. `type:method` and `type:annotation` are silent no-ops — use `returns:` / `throws:` for methods and `'"@AnnotationName"'` for annotations.
 - `type:symbol Person` is the narrow lens (the `Person` symbol itself); `sym:Person` is a substring match on FQN, so it picks up `PersonRepository` and every method inside `class Person`. Bare `Person` is broader still — also matches imports, comments, string literals.
-- Boolean operators: implicit AND between space-separated terms, lowercase `or` for disjunction, leading `-` for NOT. Capitalized `AND` / `OR` / `NOT` are not parsed as operators.
+- Boolean operators: implicit AND between space-separated terms, `or` / `OR` (case-insensitive) for disjunction, leading `-` for NOT. Standalone capitalized `AND` / `NOT` not separately verified in 4.2.x — use the implicit/`-` forms.
 - Inner double-quotes around a literal only matter when it would otherwise be misparsed: contains a colon (`'"version:1"'` keeps `version:` from being read as a filter), spans multiple words (`'"hello world"'` vs two ANDed terms), or shadows an operator (`'"or"'` for the literal word, `'"-test"'` to keep the leading dash). For bare alphanumeric tokens, `RestTemplate` and `'"RestTemplate"'` parse identically.
-- Path/language filters (`file:`, `path:` Sourcegraph alias, `lang:` / `language:` / `l:`) are documented per [PR #675](https://github.com/moderneinc/moderne-docs/pull/675); see FINDINGS.md for the local-test caveat.
+- Path/language filters parse but don't render usefully in CLI 4.2.x. `path:` / `file:` narrow correctly but render file-match mode (first-5-lines preview, no content highlights — even when combined with a content term, which then acts as a file-existence filter rather than a per-line match). `lang:` narrows the candidate set correctly but always renders 0 matches. Pick one of {path/lang filter, content term} per query in this version — combining either loses line highlights (path/file) or zeros the result entirely (lang).
 - Recipe options use bare `-PoptionName=value`, not `-Poption.optionName=`.
 
 ## A note on `sym:`

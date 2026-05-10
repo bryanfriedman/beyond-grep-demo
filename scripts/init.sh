@@ -167,56 +167,11 @@ EOF
   ln -sf "$SCRIPT_DIR/session-tokens.sh" "$target/session-tokens.sh"
 }
 
-MEDIA_CLAUDE_MD='# Agent guidance for this repo
-
-This repo has the Moderne MCP server configured. The codebase is a small
-Spring Boot 3.5 service that aggregates streaming-media metadata across
-multiple upstream providers using `RestTemplate`. Spring deprecated
-`RestTemplate` for new development; the migration target is `RestClient`
-(Spring 6.1+, synchronous), which this codebase already supports.
-
-Inventory the RestTemplate usage, run the migration recipe where it covers
-the case, fix anything the recipe leaves broken, and document anything you
-deferred.
-
-## How to work in this repo
-
-**Search:** Use the Moderne MCP tools — they are backed by Trigrep, a
-trigram index built over pre-built LSTs. They return structured, typed
-results from the LST in milliseconds, so you can skip the
-read-to-confirm-type loop.
-- `find_types` for type references (imports, fields, parameters, casts, generics)
-- `find_methods` for method invocations by AspectJ pattern
-- `find_annotations` for annotation usages
-- `trigrep_search` / `trigrep_structural_search` for free-text and Comby patterns
-- `symbols_overview` to understand a file before reading it
-
-Reach for grep only when Trigrep cannot express the query (free-text prose
-in comments, non-Java files, etc.).
-
-**Transform:** When making transformations, look for available OpenRewrite
-recipes via MCP **before** writing manual edits. Recipes are deterministic
-and preserve formatting; prefer them whenever they cover the case at hand.
-Workflow:
-1. `search_recipes` to find candidates — try queries like "RestTemplate",
-   "RestClient", "Spring Boot", etc.
-2. `learn_recipe` on a likely match to read its full description and options.
-3. `run_recipe` to apply it. Recipes operate on the LST and produce diffs
-   you can review.
-
-Fall back to manual edits (`Edit`, `change_type`, `change_method_name`,
-`pattern_replace` with a Refaster template) only for cases recipes do not
-cover.
-
-**Scope:** This is an inventory + partial migration, not a full sweep.
-Cover the clear call sites, document anything ambiguous, summarize what
-was changed and what was left.'
-
-# spring-petclinic: no repo-scoped CLAUDE.md. The agent gets its guidance
-# from the Moderne MCP tool descriptions (which themselves prefer Trigrep
-# over grep and describe the search_recipes → learn_recipe → run_recipe
-# workflow) plus the user prompt. Tests whether the MCP surface alone is
-# enough.
+# Neither repo gets a repo-scoped CLAUDE.md — the agent relies on the
+# Moderne MCP tool descriptions plus the user prompt. The setup_lane_repo
+# claude_md parameter is preserved (passes empty here) in case repo-scoped
+# guidance is reintroduced later.
+MEDIA_CLAUDE_MD=''
 PETCLINIC_CLAUDE_MD=''
 
 for lane in "$NO_DIR" "$WITH_DIR"; do

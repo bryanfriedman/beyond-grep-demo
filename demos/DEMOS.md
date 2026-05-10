@@ -65,7 +65,7 @@ already in place? What's the spread? Use the search tools available to
 you and summarize.
 ```
 
-What you're watching for: the agent reaches for Trigrep MCP tools (`find_annotations`, `trigrep_search`, `find_types`) instead of grep + read-each-file. The payoff is the same kind of inventory Demo 1 did across the portfolio — but the agent picked the tools itself, on a real codebase, in seconds.
+What you're watching for: the agent reaches for Moderne MCP tools (`find_annotations`, `trigrep_search`, `find_types`) instead of grep + read-each-file. The payoff is the same kind of inventory Demo 1 did across the portfolio — but the agent picked the tools itself, on a real codebase, in seconds.
 
 ### Example B — media, inventory + recipe (full flow)
 
