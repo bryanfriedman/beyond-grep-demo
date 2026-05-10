@@ -39,7 +39,7 @@ To iterate, edit [sequences/demo1.txt](sequences/demo1.txt). The first block is 
 
 ## Demo 2 — Agent with Trigrep MCP
 
-A single-repo agent demo where Claude Code drives the work through Trigrep MCP tools. Two example prompts, picked to show different depths of agent + recipe composition — and each one is paired with the repo it fits best. Both lanes are Gradle (Maven silently breaks MCP type resolution via the `modmaven-metadata` bug) and ship with `.mcp.json` pointing at the Moderne MCP server.
+A single-repo agent demo where Claude Code drives the work through Moderne MCP tools. Two example prompts, picked to show different depths of agent + recipe composition — and each one is paired with the repo it fits best. Both lanes are Gradle (Maven silently breaks MCP type resolution via the `modmaven-metadata` bug). The `with-trigrep` lane inherits the user-scope `moderne` MCP server (registered via `mod config agent-tools install`); the `no-trigrep` lane uses an `empty-mcp.json` + `--strict-mcp-config` to block MCP inheritance.
 
 | Example | Repo | Prompt depth | Why this pairing |
 |---|---|---|---|
@@ -117,6 +117,6 @@ With the trap on, the recipe leaves `template.setErrorHandler(...)` in `HttpClie
 - **`mod search` returns "No search index"**: LSTs built but trigram indexes weren't. Run `mod postbuild search index <path>`. If you ran `./demo init --skip-index`, that's intentional — run the postbuild live.
 - **`mod search` returns nothing (no error)**: LSTs weren't built. Re-run `./demo init` or `mod build <repo>`.
 - **`--last-search` errors**: run a `mod search` first in the same working directory; `--last-search` reads from CLI state in `~/.moderne/`.
-- **Agent in `with-trigrep/` doesn't use MCP**: confirm `.mcp.json` exists and `mod` is on PATH. Re-launch `claude` — MCP servers register at startup.
+- **Agent in `with-trigrep/` doesn't use MCP**: confirm user-scope `moderne` MCP is registered (run `mod config agent-tools install`) and that `mod` is on PATH. Re-launch `claude` — MCP servers register at startup.
 - **MCP tools show only `build_status`**: give it 15–30 s. Tools register progressively as the MCP server builds the LST internally. Use `/mcp` to check status.
 - **Build failure on a working-set clone**: `./demo init --skip-build`, then build the others by hand. The working set is permissive — drop a repo if it costs more than it earns.

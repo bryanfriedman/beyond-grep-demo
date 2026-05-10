@@ -85,6 +85,8 @@ done
 cd "$REPO_DIR"
 
 case "$LANE" in
+  # no: explicit empty config blocks user-scope MCP inheritance
   no)   exec claude --strict-mcp-config --mcp-config empty-mcp.json "${ARGS[@]}" ;;
-  with) exec claude --strict-mcp-config --mcp-config .mcp.json      "${ARGS[@]}" ;;
+  # with: inherit user-scope `moderne` MCP (registered via `mod config agent-tools install`)
+  with) exec claude "${ARGS[@]}" ;;
 esac

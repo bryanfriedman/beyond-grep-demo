@@ -12,6 +12,7 @@ Demos run live; the side-by-side `no-trigrep/` lane and `./demo tokens` are ther
 ## Prerequisites
 
 - [Moderne CLI](https://docs.moderne.io/moderne-cli/getting-started/cli-intro) (`mod`) installed and authenticated
+- Moderne MCP server registered at user scope: `mod config agent-tools install` (one-time; the `with-trigrep` lane inherits this)
 - Git
 - JDK 17+ on PATH (the CLI provisions per-repo JDKs internally for older repos)
 - Maven and Gradle for LST builds
@@ -30,9 +31,10 @@ This will:
 2. Provision **two** Demo 2 single-repos into both `no-trigrep/` and `with-trigrep/`:
    - `streamlist/media-aggregator` (curated, copied from `media-aggregator-app/`)
    - `spring-projects/spring-petclinic` (cloned from GitHub)
-3. Drop a `.mcp.json` into each `with-trigrep/` repo (Moderne MCP server)
-4. Drop an `empty-mcp.json` into each `no-trigrep/` repo (zero MCP servers)
-5. Build LSTs and trigram search indexes so `mod search` works
+3. Drop an `empty-mcp.json` into each `no-trigrep/` repo (zero MCP servers — blocks user-scope inheritance)
+4. Build LSTs and trigram search indexes so `mod search` works
+
+The `with-trigrep/` lane has no project-scope MCP config — it inherits the user-scope `moderne` MCP registered by `mod config agent-tools install`.
 
 Flags:
 - `--skip-build` — clone only, skip `mod build`

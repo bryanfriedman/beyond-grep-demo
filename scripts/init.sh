@@ -137,26 +137,16 @@ setup_lane_repo() {
   local target="$lane/$path"
 
   if [[ "$lane" == "$WITH_DIR" ]]; then
-    cat > "$target/.mcp.json" <<'EOF'
-{
-  "mcpServers": {
-    "moderne": {
-      "type": "stdio",
-      "command": "bash",
-      "args": [
-        "-c",
-        "if [ -x \"$HOME/.moderne/cli/bin/mod\" ]; then exec \"$HOME/.moderne/cli/bin/mod\" mcp; else exec mod mcp; fi"
-      ]
-    }
-  }
-}
-EOF
-    # Only drop CLAUDE.md when caller passed non-empty content — a repo can
-    # opt out of repo-scoped guidance and rely on MCP tool descriptions alone.
+    # No project-scope .mcp.json — the with-trigrep lane inherits the
+    # user-scope `moderne` MCP server registered by `mod config agent-tools
+    # install`. Provisioning a project-scope copy creates duplicate-endpoint
+    # warnings against an already-authenticated user-scope server.
     if [ -n "$claude_md" ]; then
       printf '%s\n' "$claude_md" > "$target/CLAUDE.md"
     fi
   else
+    # The no-trigrep lane explicitly blocks MCP inheritance via
+    # --strict-mcp-config + this empty config (see start.sh).
     cat > "$target/empty-mcp.json" <<'EOF'
 {
   "mcpServers": {}
