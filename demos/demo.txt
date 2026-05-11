@@ -54,6 +54,7 @@ mod search . extends:RuntimeException
 # Composed filter. Every public method that declares throws IOException. Two LST filters working together.
 mod search . visibility:public throws:IOException
 
+## CLEAR
 ## ── Section 2: RestTemplate climb → migration recipe (transformation) ──────
 ## Premise: "Modernize the HTTP-client layer — migrate RestTemplate to RestClient."
 ## Climb: literal → type:symbol → migration recipe.
