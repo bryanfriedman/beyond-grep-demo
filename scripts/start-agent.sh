@@ -92,6 +92,7 @@ if [ "$SKIP_PERMS" = true ]; then
 fi
 
 cd "$REPO_DIR"
+clear
 
 case "$LANE" in
   # no: explicit empty config blocks user-scope MCP inheritance

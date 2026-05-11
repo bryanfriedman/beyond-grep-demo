@@ -106,6 +106,17 @@ provision_repo() {
       # Strip caches and source-of-truth-only directories that shouldn't
       # appear inside the provisioned lane copy.
       rm -rf "$target/.moderne" "$target/build" "$target/extras"
+      # Make the lane its own git repo. Without this, `mod mcp` walks up
+      # from cwd looking for a .git boundary, finds the outer demo repo,
+      # and scopes the LST/recipe runner to the whole demo tree — which
+      # makes recipe runs leak across all repos sharing source content
+      # (e.g., media-aggregator-app/). A standalone baseline commit also
+      # gives reset-agent.sh's `git checkout -- .` something real to
+      # restore against (the lane is otherwise gitignored from the outer
+      # repo, so the checkout would be a no-op).
+      git -C "$target" init --quiet
+      git -C "$target" add -A
+      git -C "$target" -c commit.gpgsign=false commit --quiet -m "lane baseline" --allow-empty
       ;;
     git:*)
       local url="${source#git:}"
