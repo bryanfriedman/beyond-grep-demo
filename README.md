@@ -83,9 +83,10 @@ See [demos/DEMOS.md](demos/DEMOS.md) for the per-demo walkthrough. For the curat
 ./demo cli                               # Demo 1 — working-set Trigrep CLI + --last-search bridge
 
 ./demo reset media                       # before each Demo 2 rehearsal
-./demo agent                             # Demo 2 — defaults to `with media --yolo` style flow
-./demo agent with petclinic --yolo       # Demo 2 — petclinic repo
-./demo agent no media --yolo             # Optional cost comparison (no MCP)
+./demo agent                             # Demo 2 — defaults: `with media`, yolo permissions
+./demo agent with petclinic              # Demo 2 — petclinic repo
+./demo agent no media                    # Optional cost comparison (no MCP)
+./demo agent --ask                       # Opt into Claude's permission prompts
 
 ./demo trap status                       # is the trap enabled in the media lane?
 ./demo trap enable                       # opt into the "agent fixes recipe gap" beat
@@ -94,4 +95,4 @@ See [demos/DEMOS.md](demos/DEMOS.md) for the per-demo walkthrough. For the curat
 ./demo tokens <session-id>               # token report after a Demo 2 session
 ```
 
-The lane symlinks for `./start-agent.sh` inside each `no-trigrep/` and `with-trigrep/` repo dir continue to work — they point at `scripts/start-agent.sh` directly. From inside a lane, `./start-agent.sh --yolo` launches the agent with that lane's MCP config.
+The lane symlinks for `./start-agent.sh` inside each `no-trigrep/` and `with-trigrep/` repo dir continue to work — they point at `scripts/start-agent.sh` directly. From inside a lane, `./start-agent.sh` launches the agent with that lane's MCP config (yolo permissions by default; pass `--ask` to opt into prompts).

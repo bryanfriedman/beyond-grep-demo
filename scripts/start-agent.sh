@@ -3,12 +3,14 @@
 # Unified launcher for the Demo 2 single-repo agent demo.
 #
 # From the demo root:
-#   ./start-agent.sh [no|with] [media|petclinic] [--yolo] [extra claude args...]
+#   ./start-agent.sh [no|with] [media|petclinic] [--ask] [extra claude args...]
 #
 # From a lane's repo dir (via symlink):
-#   ./start-agent.sh [--yolo] [extra claude args...]
+#   ./start-agent.sh [--ask] [extra claude args...]
 #
-# Defaults: lane = with (inherits user-scope Moderne MCP), repo-key = media.
+# Defaults: lane = with (inherits user-scope Moderne MCP), repo-key = media,
+# permissions = skip (yolo-by-default). Pass --ask to opt into Claude's normal
+# permission prompts.
 
 set -euo pipefail
 
@@ -63,7 +65,7 @@ case "$INVOKED_FROM" in
       no)   REPO_DIR="$DEMO_ROOT/no-trigrep/$REPO_PATH" ;;
       with) REPO_DIR="$DEMO_ROOT/with-trigrep/$REPO_PATH" ;;
       *)
-        echo "Usage: $0 [no|with] [media|petclinic] [--yolo] [extra claude args...]" >&2
+        echo "Usage: $0 [no|with] [media|petclinic] [--ask] [extra claude args...]" >&2
         exit 1
         ;;
     esac
@@ -76,14 +78,18 @@ if [ ! -d "$REPO_DIR" ]; then
   exit 1
 fi
 
-# Translate --yolo / --skip-perms shortcut.
+# Permissions: yolo-by-default. Pass --ask to opt into Claude's normal permission prompts.
+SKIP_PERMS=true
 ARGS=()
 for arg in "$@"; do
   case "$arg" in
-    --yolo|--skip-perms) ARGS+=("--dangerously-skip-permissions") ;;
-    *)                   ARGS+=("$arg") ;;
+    --ask) SKIP_PERMS=false ;;
+    *)     ARGS+=("$arg") ;;
   esac
 done
+if [ "$SKIP_PERMS" = true ]; then
+  ARGS=("--dangerously-skip-permissions" "${ARGS[@]}")
+fi
 
 cd "$REPO_DIR"
 

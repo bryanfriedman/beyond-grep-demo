@@ -29,7 +29,7 @@ From the demo root, use `trap-mode.sh`:
 ./demo trap disable        # restore clean state (= ./demo reset media)
 ```
 
-Then launch as usual: `./demo agent with media --yolo`.
+Then launch as usual: `./demo agent with media`.
 
 ## Why this isn't the default
 

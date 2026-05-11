@@ -18,7 +18,7 @@ A separate platform-only opener (a recipe run from the Moderne UI) is performed 
 Both demos demonstrate the same escalation: **Trigrep narrows fast, a recipe gives the precise answer.** And both demos show the same two recipe destinations — search recipes (precise inventory) and transformation recipes (migration).
 
 - **Demo 1** runs both destinations in the CLI: Section 1's Item climb hands off to a search recipe (`FindTypes`); Section 2's RestTemplate climb hands off to a transformation recipe (migration to `RestClient`).
-- **Demo 2** mirrors them with the agent: petclinic does the search-recipe escalation (`@Autowired` → `FindAnnotations`); media does the transformation-recipe escalation (`RestTemplate` migration).
+- **Demo 2** shows the agent picking tools by question: petclinic uses Trigrep alone (`trigrep_search` and `trigrep_structural_search`) for fast exploratory questions where a recipe would be overkill; media does the full inventory-plus-transformation flow, escalating from Trigrep through `find_*` to the migration recipe.
 
 Search and recipes aren't separate tools you bolt together. They're projections of the same LST that hand off to each other, regardless of who's driving — human in the CLI or agent through MCP.
 
@@ -93,53 +93,54 @@ What the migration recipe adds: the actual transformation. Calls get rewritten, 
 
 ---
 
-## Demo 2 — Agent with Moderne MCP, two-turn escalation
+## Demo 2 — Agent with Moderne MCP
 
-The pattern Demo 2 demonstrates: **Trigrep first-cut, then user follow-up escalates to a recipe.** Same shape Demo 1 showed in the CLI, now driven by the agent. The follow-up is the move — Turn 1 gets a fast Trigrep answer; Turn 2 asks for the recipe that produces the precise result.
+The pattern Demo 2 demonstrates: **the agent picks tools by question.** Some questions need a fast text/structural scan; others need the full inventory-then-recipe flow. Two examples show both modes:
 
-Two examples cover the two recipe destinations:
-
-| Example | Repo | Follow-up recipe type | Why this pairing |
-|---------|------|----------------------|------------------|
-| A — petclinic | `spring-projects/spring-petclinic` | Search recipe (precise inventory) | Real, recognizable codebase. Shows the agent escalating to a search recipe for FQN-precise output — same kind of jump Demo 1's `--last-search` made. |
-| B — media | `streamlist/media-aggregator` (from [`media-aggregator-app/`](../media-aggregator-app/)) | Transformation recipe (migration) | Curated for predictability — multi-pattern by design (`getForObject`, `getForEntity`, `postForEntity`, `exchange` with custom `HttpHeaders`, `delete`, plus `RestTemplate` inside `@Retryable`) so the recipe diff reads visually. |
+| Example | Repo | What's shown | Why this pairing |
+|---------|------|--------------|------------------|
+| A — petclinic | `spring-projects/spring-petclinic` | Trigrep-only — `trigrep_search` and `trigrep_structural_search` for fast exploratory questions. No recipe. | Real, recognizable codebase. Showcases Trigrep as the agent's "fast cut" tool when a recipe would be overkill. |
+| B — media | `streamlist/media-aggregator` (from [`media-aggregator-app/`](../media-aggregator-app/)) | Full agent flow — Trigrep + `find_*` for inventory, then escalation to a transformation recipe (migration to `RestClient`). | Curated for predictability — multi-pattern by design (`getForObject`, `getForEntity`, `postForEntity`, `exchange` with custom `HttpHeaders`, `delete`, plus `RestTemplate` inside `@Retryable`) so the recipe diff reads visually. |
 
 Both lanes are Gradle (Maven silently breaks MCP type resolution via the `modmaven-metadata` bug). The `with-trigrep` lane inherits the user-scope `moderne` MCP server (registered via `mod config agent-tools install`); the `no-trigrep` lane uses an `empty-mcp.json` + `--strict-mcp-config` to block MCP inheritance.
 
-After `./demo agent with <repo> --yolo`, give the terminal ~15–30 s before pasting the first prompt — MCP tools register progressively as the LST builds. `/mcp` shows status; wait until the Moderne server reports all 18 tools (or autocomplete `mcp__moderne__find_types`).
+After `./demo agent with <repo>`, give the terminal ~15–30 s — MCP tools register progressively as the LST builds. `/mcp` shows status; wait until the Moderne server reports all 18 tools (or autocomplete `mcp__moderne__find_types`). Permissions are auto-skipped by default; pass `--ask` to opt into Claude's normal prompts.
 
-### Example A — petclinic: Trigrep first-cut, then search-recipe escalation
+Prompts for both examples live in [prompts.txt](prompts.txt). Keep that file open during rehearsal — copy/paste the prompt for the current turn into claude's input when you're ready to send.
+
+### Example A — petclinic: Trigrep showcase (no recipe)
 
 ```bash
-./demo agent with petclinic --yolo
+./demo agent with petclinic
 ```
 
-**Turn 1 prompt** — fast Trigrep inventory:
+Two simple exploratory prompts, each landing a different Trigrep mode. No recipe escalation — the answer IS the search. CLAUDE.md (user-scope) primes the agent on `struct:"..."` form and the `extends:`/`implements:`/`returns:`/`throws:` LST filters, so the prompts can stay short.
+
+**Prompt 1** — structural search via `trigrep_structural_search`:
 
 ```
-Where is field-level @Autowired still in use in this repo? Just a quick
-inventory — what's the spread between field injection and constructor
-injection? Use the search tools available to you.
+What exception types does this codebase throw, and what arguments do they take?
 ```
 
-What you're watching for: the agent reaches for `trigrep_search` / `find_annotations`, returns a fast answer driven by the trigram index.
+What you're watching for: the agent reaches for `trigrep_structural_search` with `struct:"throw new :[type](:[args])"`. Different exception types and argument shapes show up — the holes capture the variability.
 
-**Turn 2 prompt** — escalate to a precise search recipe:
+**Prompt 2** — LST filter via `trigrep_search`:
 
 ```
-Now use the FindAnnotations recipe to give me a precise, type-resolved
-inventory I can share with the team.
+Find every class that directly extends BaseEntity.
 ```
 
-What you're watching for: agent reaches for `search_recipes` → `learn_recipe` → `run_recipe`, producing the structured FQN-resolved inventory. Same escalation shape Demo 1 just did via `--last-search`, agent-driven this time.
+What you're watching for: the agent reaches for `trigrep_search` with `extends:BaseEntity` (LST-aware filter, direct extenders only — *not* `find_implementations`, which would give transitive results). Returns the small set of classes that directly inherit from BaseEntity. Demonstrates Trigrep's LST-aware filters (`extends:`, `implements:`, `returns:`, `throws:`, `visibility:`) — things grep can't touch.
 
-> Closing line for this example: *"Trigrep got the quick answer; the recipe gave the precise one. Same handoff, the agent picked the tools itself."*
+(The annotations/endpoints example moved to Demo 2's media flow, where the agent uses `find_*` and Trigrep together. No need to repeat the regex-search beat here.)
+
+> Closing line for this example: *"Two questions, two Trigrep modes — structural and LST filter. Both landed without a recipe. Sometimes the search IS the answer."*
 
 ### Example B — media: Trigrep first-cut, then transformation-recipe escalation
 
 ```bash
 ./demo reset media           # before each rehearsal
-./demo agent with media --yolo
+./demo agent with media
 ```
 
 **Turn 1 prompt** — fast Trigrep inventory:
@@ -188,7 +189,7 @@ With the trap on, the recipe leaves `template.setErrorHandler(...)` in `HttpClie
 Run the same prompts against the `no-trigrep/` lane (zero MCP servers via `empty-mcp.json` + `--strict-mcp-config`) and put the two sessions side by side. The agent falls back to grep + read-each-file, and the token delta is the number to quote live.
 
 ```bash
-./demo agent no media --yolo        # or `no petclinic`
+./demo agent no media        # or `no petclinic`
 ./demo tokens <session-id>          # run for both sessions, after capturing the IDs
 ```
 

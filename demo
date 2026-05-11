@@ -23,8 +23,10 @@ Commands:
                                   media lane (recipe leaves a setErrorHandler
                                   call the agent has to fix manually).
 
-  agent [no|with] [media|petclinic] [--yolo] [extra claude args...]
-                                  Launch the agent in a lane. Defaults: with, media.
+  agent [no|with] [media|petclinic] [--ask] [extra claude args...]
+                                  Launch the agent in a lane. Defaults: with, media,
+                                  permissions skipped (yolo). Pass --ask to opt
+                                  into Claude's normal permission prompts.
 
   cli [<sequence-name>]           Run a CLI demo sequence with the press-Enter
                                   shell sequencer. Defaults to demos/demo.txt.
@@ -39,9 +41,10 @@ Examples:
   ./demo init
   ./demo reset media
   ./demo trap enable
-  ./demo agent                              # = ./demo agent with media
-  ./demo agent with petclinic --yolo
-  ./demo agent no media --yolo
+  ./demo agent                              # = ./demo agent with media (yolo)
+  ./demo agent with petclinic
+  ./demo agent no media
+  ./demo agent --ask                        # opt into permission prompts
   ./demo cli                                # = ./demo cli demo (demos/demo.txt)
   ./demo tokens 7f3c1234-…-abcd
 EOF

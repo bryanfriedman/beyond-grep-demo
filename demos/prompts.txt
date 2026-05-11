@@ -1,0 +1,12 @@
+# Prompts for ./demo agent — copy/paste as needed during rehearsal.
+
+## petclinic (Trigrep showcase, no recipe)
+
+What exception types does this codebase throw, and what arguments do they take?
+Find every class that directly extends BaseEntity.
+
+
+## media (full agent flow with migration recipe)
+
+Give me a quick inventory of RestTemplate usage in this repo. Where are the call sites, what call shapes show up?
+Now apply the most appropriate migration recipe to convert RestTemplate to RestClient on the mechanical cases. Stop when those are handled — leave anything ambiguous untouched and document what was deferred.
