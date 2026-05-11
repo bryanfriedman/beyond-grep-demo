@@ -10,6 +10,10 @@
 #   - Lines starting with `##` (two or more hashes) are PRIVATE notes —
 #     skipped entirely, never rendered. Use these for presenter notes that
 #     should not appear on the projector.
+#   - `## CLEAR` is a directive (still a private note, doesn't render): before
+#     the next block runs, pause for Enter and then clear the screen. Useful
+#     between demo sections — keeps the previous section's output visible until
+#     the presenter is ready to advance.
 #   - Other lines are commands. Each block (cue + cmd) is separated by a blank line.
 #   - Commands are evaluated in the sequencer's shell, so `cd`, pipes, redirects,
 #     and shell-quoted args all work. The prompt's cwd updates after each `cd`.
@@ -50,15 +54,19 @@ RESET=$'\033[0m'
 # Clean exit on Ctrl-C.
 trap 'printf "\n%s# stopped%s\n" "$DIM" "$RESET"; exit 0' INT
 
-# Parse the sequence file into parallel arrays: cues + cmds (one entry per block).
+# Parse the sequence file into parallel arrays: cues + cmds + clears (one entry per block).
 CUES=()
 CMDS=()
+CLEARS=()
 cue=""
 cmd=""
+next_clears=0
 flush_block() {
   if [ -n "$cmd" ]; then
     CUES+=("$cue")
     CMDS+=("$cmd")
+    CLEARS+=("$next_clears")
+    next_clears=0
   fi
   cue=""; cmd=""
 }
@@ -68,7 +76,10 @@ while IFS= read -r line || [ -n "$line" ]; do
     continue
   fi
   if [[ "$line" == "##"* ]]; then
-    # Private presenter note — never rendered.
+    # Private presenter note — never rendered, except for directives.
+    if [[ "$line" == "## CLEAR"* ]]; then
+      next_clears=1
+    fi
     continue
   elif [[ "$line" == "#"* ]]; then
     stripped="${line#\#}"
@@ -101,6 +112,11 @@ build_prompt() {
 clear
 
 for ((i=0; i<TOTAL; i++)); do
+  if [ "${CLEARS[$i]:-0}" = "1" ]; then
+    printf "%s# press Enter for next section…%s" "$DIM" "$RESET"
+    read -r _
+    clear
+  fi
   cue="${CUES[$i]}"
   cmd="${CMDS[$i]}"
 

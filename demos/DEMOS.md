@@ -1,13 +1,28 @@
 # Beyond grep — demos
 
-Two demos, both built on the same LST substrate:
+The talk's pitch: code change at scale needs more than grep. Recipes are precise but require knowing what to change. Search is fast but text-only. Moderne builds both on the same LST substrate, so they compose — search hands off to recipe without re-parsing, and agents pick up the same tools the same way.
 
-| # | Demo | Surface | Where it runs |
-|---|---|---|---|
-| 1 | Trigrep CLI across the working set, ending with a `--last-search` recipe handoff | `mod search` → `mod run --last-search` | `working-set/` via [sequences/demo1.txt](sequences/demo1.txt) |
-| 2 | Agent with Trigrep MCP on a single repo, two example prompts | Claude Code | `./demo start with <repo>` |
+The kind of change we're walking through is the routine reality of any long-lived Spring codebase: *the framework moves on, your code stays where it was written.* Field `@Autowired` was idiomatic five years ago; Spring now recommends constructor injection (testability, immutability, fail-fast wiring). `RestTemplate` was the HTTP client for a decade; Spring put it in maintenance mode and points new code at `RestClient` (Spring 6.1+, synchronous, fluent builder). The audit-and-migrate work is the same recurring problem at portfolio scale.
 
-A separate platform-only opener (a recipe run from the Moderne UI) is performed live and is not scaffolded here.
+Two demos, same handoff pattern (search narrows, recipe acts), different surfaces:
+
+| # | Demo | What it shows | Surface | Where it runs |
+|---|------|---------------|---------|---------------|
+| 1 | Trigrep CLI across the working set | Two climbs, two recipe destinations via `--last-search`: search recipe (Item inventory) and transformation recipe (RestTemplate migration) | `mod search` → `mod run --last-search` | `working-set/` via [demo.txt](demo.txt) |
+| 2 | Agent with Moderne MCP on a single repo | Trigrep first-cut, then user follow-up triggers a recipe — two examples mirroring Demo 1's two recipe destinations | Claude Code | `./demo agent with petclinic` and `./demo agent with media` |
+
+A separate platform-only opener (a recipe run from the Moderne UI) is performed live and is not scaffolded here. It establishes "recipes work" — the rest of the talk is *how the platform engineer gets to a recipe* (Demo 1) and *how an agent picks one up* (Demo 2).
+
+## The shared pattern
+
+Both demos demonstrate the same escalation: **Trigrep narrows fast, a recipe gives the precise answer.** And both demos show the same two recipe destinations — search recipes (precise inventory) and transformation recipes (migration).
+
+- **Demo 1** runs both destinations in the CLI: Section 1's Item climb hands off to a search recipe (`FindTypes`); Section 2's RestTemplate climb hands off to a transformation recipe (migration to `RestClient`).
+- **Demo 2** mirrors them with the agent: petclinic does the search-recipe escalation (`@Autowired` → `FindAnnotations`); media does the transformation-recipe escalation (`RestTemplate` migration).
+
+Search and recipes aren't separate tools you bolt together. They're projections of the same LST that hand off to each other, regardless of who's driving — human in the CLI or agent through MCP.
+
+---
 
 ## Prerequisites
 
@@ -19,86 +34,144 @@ Clones the working set, provisions both Demo 2 single-repo lanes, builds LSTs, a
 
 ---
 
-## Demo 1 — Trigrep CLI across the portfolio
+## Demo 1 — Trigrep CLI across the working set
 
-> **Scenario:** "I'm a platform engineer. Leadership decided we're modernizing our HTTP-client layer across the Spring services we own. Before I commit to anything, I need a real picture of what's in there. How many services still use `RestTemplate`? Where are the call sites? What other shapes — `WebClient`, `RestClient`, OkHttp, Feign — do we already have? I want to climb from 'find a string' to 'find a method shape' without changing tools, then narrow to a precise recipe pass on just the repos that matter."
+> **Scenario:** "I'm a platform engineer at a Spring shop. Leadership says modernize. Two specific items on my plate: I need an inventory of where `Item`-like domain types live across services (which services own which), and the HTTP-client modernization — `RestTemplate` is in maintenance mode, new code should be `RestClient`. I want to climb from 'find a string' to 'find a code shape' without changing tools, then narrow to a precise recipe pass — sometimes for inventory, sometimes for transformation."
 
-**What the demo proves:** one search surface, several projections. Open with grep-shaped queries the audience already knows (literals, regex). Climb the ladder: symbol search, semantic filters (`visibility:public throws:IOException`, `returns:ResponseEntity` — try saying those in grep), `struct:` for code shapes that span multiple tokens. Each rung answers something the rung below can't. Close by handing the matched repo set straight to a recipe via `--last-search` — fast Trigrep narrows the haystack, the recipe works the narrowed haystack.
-
-> Closing line: *"Same LST, different projections. Trigrep is the fast one — and it hands directly to the precise one."*
+**What the demo proves:** Trigrep supports breadth of search types (literal, regex, `type:symbol`, structural patterns), AND it hands off to *two* recipe destinations via `--last-search` — search recipes (precise inventory) and transformation recipes (migration). All on the same LST, no reparsing, no tool switch.
 
 ```bash
-./demo seq demo1
+./demo cli
 ```
 
 The sequencer renders each block as a fake shell prompt + the command on the next line, narration cues showing as `# comments` above. Press Enter to advance — at each step you can edit the command inline before running it (bash 4+ `read -e -i`). Empty input skips a block; Ctrl-C exits cleanly.
 
-To iterate, edit [sequences/demo1.txt](sequences/demo1.txt). The first block is `cd working-set`; everything after runs from that working directory. Pull additional candidate queries from [QUERIES.md](QUERIES.md).
+### Section 1 — Item climb, search-recipe handoff (~2-3 min)
+
+Climb broad → narrow via different search shapes, ending in `FindTypes` for an FQN-precise inventory. The narrowing here has a subtle ordering: `type:symbol Item` still includes `*Item*` substring matches (e.g., `ItemRepository`), so a word-boundary regex `\bItem\b` is actually the narrowest text-based step. The recipe is FQN-precise.
+
+Starting progression:
+
+- Broad — every textual `Item` (the Item classes + `ItemRepository`, `itemId`, comments, strings) — `mod search . Item`
+- Symbol — narrower, but still catches `*Item*` substrings — `mod search . type:symbol Item`
+- Word-boundary regex — narrowest text-based, only "Item" as a standalone word — `mod search . '/\bItem\b/'`
+- Hand to FindTypes — `mod run . --last-search --recipe=org.openrewrite.java.search.FindTypes -PfullyQualifiedTypeName=com.ewolff.microservice.catalog.Item`
+
+What `FindTypes` adds on top of the regex: FQN-precise. The output is a clean list scoped to one specific `Item` type (here ewolff's catalog `Item`, dropping piggymetrics' account `Item`) — a search recipe as report destination, not a stepping stone.
+
+### Interlude — Struct + LST-filter showcase (~75-90s)
+
+Queries not tied to either climb, demonstrating two flavors of LST-aware searching that grep can't reach:
+
+**Struct (code-shape matching with holes that capture varying content):**
+
+- `mod search . 'struct:throw new :[exception:id](:[args:e])'` — every `throw new ...(...)` statement across the working set. Matches the *shape* (not the type); `:[exception:id]` captures different exception types; `:[args:e]` captures varying message shapes (empty, message-only, message + cause). One pattern, many concrete call shapes.
+- `mod search . 'struct:@:[ann:id](":[value]")'` — every annotation with parameters (`@RequestMapping("/path")`, `@PreAuthorize("...")`, `@Cacheable(...)`, `@Qualifier("name")`, etc.). `:[ann:id]` captures the annotation name; `:[value]` captures whatever's inside the parens. Pattern stays constant; both captures vary across matches.
+
+**LST filters (semantic queries grep can't ask):**
+
+- `mod search . extends:RuntimeException` — every class that directly extends `RuntimeException`. Inheritance filter; grep can't ask "extends" semantically.
+- `mod search . visibility:public throws:IOException` — every public method declaring `throws IOException`. Composed filter — two LST filters working together; the grep one-liner is a paragraph.
+
+The interlude is orthogonal to both threads — its job is to land "Trigrep does code-shape and semantic-property searches the climbs didn't have room for" before we go back to thread-driven narrowing.
+
+### Section 2 — RestTemplate climb, transformation-recipe handoff (~3 min)
+
+Same climb shape as Section 1, different destination — the recipe here is a *transformation*, not a search. The diff at the end is what the audience sees, not just a structured list.
+
+Starting progression:
+
+- Broad — every textual `RestTemplate` (the real type, plus look-alikes like `OAuth2RestTemplate`, `RestTemplateBuilder`, `TestRestTemplate`, comments, strings) — `mod search . RestTemplate`
+- Symbol — narrows to the `RestTemplate` symbol (still has some substring leakage) — `mod search . type:symbol RestTemplate`
+- Hand to the migration recipe — `mod run . --last-search --recipe=io.moderne.java.spring.boot3.MigrateRestTemplateToRestClient`
+
+What the migration recipe adds: the actual transformation. Calls get rewritten, imports get updated, the diff is the destination. Demo 2 will pick up the same pattern with the agent.
+
+> Closing line for Demo 1: *"Two climbs, two destinations. One ended in a search recipe for precise inventory; the other ended in a transformation. Same handoff pattern, two different recipe types — exactly the shape Demo 2 mirrors with the agent."*
+
+> **Note on rehearsal:** the queries above are starting points. Some `mod search` filter combinations have known quirks in CLI 4.2.x (path/lang filters render badly when combined with content terms; leading `-` query terms collide with the option parser). [QUERIES.md](QUERIES.md) has the bench and the gotchas — substitute alternates if a query reads poorly live.
 
 ---
 
-## Demo 2 — Agent with Trigrep MCP
+## Demo 2 — Agent with Moderne MCP, two-turn escalation
 
-A single-repo agent demo where Claude Code drives the work through Moderne MCP tools. Two example prompts, picked to show different depths of agent + recipe composition — and each one is paired with the repo it fits best. Both lanes are Gradle (Maven silently breaks MCP type resolution via the `modmaven-metadata` bug). The `with-trigrep` lane inherits the user-scope `moderne` MCP server (registered via `mod config agent-tools install`); the `no-trigrep` lane uses an `empty-mcp.json` + `--strict-mcp-config` to block MCP inheritance.
+The pattern Demo 2 demonstrates: **Trigrep first-cut, then user follow-up escalates to a recipe.** Same shape Demo 1 showed in the CLI, now driven by the agent. The follow-up is the move — Turn 1 gets a fast Trigrep answer; Turn 2 asks for the recipe that produces the precise result.
 
-| Example | Repo | Prompt depth | Why this pairing |
-|---|---|---|---|
-| A | `petclinic` (`spring-projects/spring-petclinic`) | Shallow inventory | Real, recognizable codebase. Audience nods at "yeah, petclinic." Shows the agent driving Trigrep across code we didn't write. |
-| B | `media` (`streamlist/media-aggregator`, from [`media-aggregator-app/`](../media-aggregator-app/)) | Full flow with recipe | Curated for predictability across rehearsals. Designed with multiple `RestTemplate` call patterns so the recipe diff reads visually. Optional trap mode for the "agent fixes what the recipe didn't" beat. |
+Two examples cover the two recipe destinations:
 
-After `./demo start with <repo> --yolo`, give the terminal ~15–30 s before pasting the prompt — MCP tools register progressively as the LST builds. `/mcp` shows status; wait until the Moderne server reports all 18 tools (or autocomplete `mcp__moderne__find_types`). Petclinic's first build is slower (~60–90 s) because of SB 4 AOT-generated stubs; cached after.
+| Example | Repo | Follow-up recipe type | Why this pairing |
+|---------|------|----------------------|------------------|
+| A — petclinic | `spring-projects/spring-petclinic` | Search recipe (precise inventory) | Real, recognizable codebase. Shows the agent escalating to a search recipe for FQN-precise output — same kind of jump Demo 1's `--last-search` made. |
+| B — media | `streamlist/media-aggregator` (from [`media-aggregator-app/`](../media-aggregator-app/)) | Transformation recipe (migration) | Curated for predictability — multi-pattern by design (`getForObject`, `getForEntity`, `postForEntity`, `exchange` with custom `HttpHeaders`, `delete`, plus `RestTemplate` inside `@Retryable`) so the recipe diff reads visually. |
 
-### Example A — petclinic, Trigrep-driven inventory (shallow)
+Both lanes are Gradle (Maven silently breaks MCP type resolution via the `modmaven-metadata` bug). The `with-trigrep` lane inherits the user-scope `moderne` MCP server (registered via `mod config agent-tools install`); the `no-trigrep` lane uses an `empty-mcp.json` + `--strict-mcp-config` to block MCP inheritance.
 
-> **Scenario:** "Before I commit to anything in this real-world Spring sample, I want the agent to give me the lay of the land. What's the dependency-injection style? Where is field-level `@Autowired` still being used? Just the inventory pass — same kind of thing Demo 1 did across the portfolio, narrowed to one repo and driven by an agent that picks the search tools itself."
+After `./demo agent with <repo> --yolo`, give the terminal ~15–30 s before pasting the first prompt — MCP tools register progressively as the LST builds. `/mcp` shows status; wait until the Moderne server reports all 18 tools (or autocomplete `mcp__moderne__find_types`).
+
+### Example A — petclinic: Trigrep first-cut, then search-recipe escalation
 
 ```bash
-./demo start with petclinic --yolo
+./demo agent with petclinic --yolo
 ```
 
-Suggested prompt:
+**Turn 1 prompt** — fast Trigrep inventory:
 
 ```
-Give me an inventory of dependency-injection usage in this repo. Where
-is field-level @Autowired still in use? Where is constructor injection
-already in place? What's the spread? Use the search tools available to
-you and summarize.
+Where is field-level @Autowired still in use in this repo? Just a quick
+inventory — what's the spread between field injection and constructor
+injection? Use the search tools available to you.
 ```
 
-What you're watching for: the agent reaches for Moderne MCP tools (`find_annotations`, `trigrep_search`, `find_types`) instead of grep + read-each-file. The payoff is the same kind of inventory Demo 1 did across the portfolio — but the agent picked the tools itself, on a real codebase, in seconds.
+What you're watching for: the agent reaches for `trigrep_search` / `find_annotations`, returns a fast answer driven by the trigram index.
 
-### Example B — media, inventory + recipe (full flow)
+**Turn 2 prompt** — escalate to a precise search recipe:
 
-> **Scenario:** "Now I want the agent to do the migration end-to-end on a service I own. Inventory the `RestTemplate` surface, find the OpenRewrite recipe that handles the mechanical conversion, run it, fix anything the recipe didn't cover, and report what changed."
+```
+Now use the FindAnnotations recipe to give me a precise, type-resolved
+inventory I can share with the team.
+```
+
+What you're watching for: agent reaches for `search_recipes` → `learn_recipe` → `run_recipe`, producing the structured FQN-resolved inventory. Same escalation shape Demo 1 just did via `--last-search`, agent-driven this time.
+
+> Closing line for this example: *"Trigrep got the quick answer; the recipe gave the precise one. Same handoff, the agent picked the tools itself."*
+
+### Example B — media: Trigrep first-cut, then transformation-recipe escalation
 
 ```bash
 ./demo reset media           # before each rehearsal
-./demo start with media --yolo
+./demo agent with media --yolo
 ```
 
-Suggested prompt (start with this; refine over time):
+**Turn 1 prompt** — fast Trigrep inventory:
 
 ```
-Inventory the RestTemplate usage in this repo and apply the most
-appropriate migration recipe to the mechanical cases. Stop when the
-mechanical cases are handled — leave anything ambiguous untouched and
-document what was deferred.
+Give me a quick inventory of RestTemplate usage in this repo. Where are
+the call sites, what call shapes show up?
 ```
 
-What you're watching for: agent calls `find_types` / `trigrep_search` for inventory → `search_recipes` to discover the recipe → `learn_recipe` to read it → `run_recipe` to apply it → manual edits only where the recipe leaves something unfinished. That whole chain happens inside one MCP server.
+What you're watching for: agent reaches for `find_types` / `trigrep_search`, returns the inventory.
 
-> Closing line: *"Same LST, third projection. Trigrep is now a tool the agent picks up like any other — and the recipe layer is right alongside it."*
+**Turn 2 prompt** — escalate to a transformation recipe:
 
-### Optional: side-by-side with `no-trigrep` (token delta)
-
-A natural follow-on to either example: run the same prompt against the `no-trigrep/` lane (zero MCP servers via `empty-mcp.json`) and put the two sessions side by side. The agent falls back to grep + read-each-file, and the token delta is the number to quote live.
-
-```bash
-./demo start no media --yolo        # or `no petclinic`
-./demo tokens <session-id>          # run for both sessions, after capturing the IDs
+```
+Now apply the most appropriate migration recipe to convert RestTemplate
+to RestClient on the mechanical cases. Stop when those are handled —
+leave anything ambiguous untouched and document what was deferred.
 ```
 
-### Optional: trap mode for the `media` repo
+What you're watching for: agent reaches for `search_recipes` → `learn_recipe` → `run_recipe` → manual edits only where the recipe leaves something unfinished. The diff in the terminal is the closing visual.
+
+> Closing line: *"Same escalation pattern as petclinic, but now the recipe transformed the code instead of just reporting on it. Trigrep plus a recipe can land you anywhere on the search-vs-transform spectrum."*
+
+> Final closing for the talk: *"Same LST, three surfaces. Trigrep is a tool the agent picks up like any other — and the recipe layer is right alongside it."*
+
+---
+
+## Optional beats
+
+These lengthen Demo 2 — use sparingly, only if the spine has landed.
+
+### Trap mode for `media` — "agent fixes what the recipe didn't"
 
 `media-aggregator-app/` ships clean by default — the recipe produces compilable output. If you want a beat where the agent has to fix something the recipe leaves broken, enable trap mode:
 
@@ -109,6 +182,15 @@ A natural follow-on to either example: run the same prompt against the `no-trigr
 ```
 
 With the trap on, the recipe leaves `template.setErrorHandler(...)` in `HttpClientConfig` — but `RestClient` has no `setErrorHandler` method. The agent has to recognize the compile break and convert to `RestClient.builder().defaultStatusHandler(...)` (or document the deferral). Trap mode is fragile across rehearsals (the recipe leaves uncompilable code, which can poison subsequent MCP LST rebuilds), so use `./demo reset media` between runs.
+
+### Side-by-side with `no-trigrep` — token delta
+
+Run the same prompts against the `no-trigrep/` lane (zero MCP servers via `empty-mcp.json` + `--strict-mcp-config`) and put the two sessions side by side. The agent falls back to grep + read-each-file, and the token delta is the number to quote live.
+
+```bash
+./demo agent no media --yolo        # or `no petclinic`
+./demo tokens <session-id>          # run for both sessions, after capturing the IDs
+```
 
 ---
 

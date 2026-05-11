@@ -25,8 +25,8 @@ WORKING_SET_DIR="$DEMO_ROOT/working-set"
 NO_DIR="$DEMO_ROOT/no-trigrep"
 WITH_DIR="$DEMO_ROOT/with-trigrep"
 
-# Demo 2 single-repos. Two options exposed to start.sh — pick at session
-# launch via `./start.sh <lane> <key>` where <key> is one of:
+# Demo 2 single-repos. Two options exposed to start-agent.sh — pick at session
+# launch via `./start-agent.sh <lane> <key>` where <key> is one of:
 #   media     → streamlist/media-aggregator (curated synthetic, from media-aggregator-app/) —
 #               HTTP-client modernization (RestTemplate → RestClient).
 #   petclinic → spring-projects/spring-petclinic (real-world, from GitHub) —
@@ -129,7 +129,7 @@ done
 # setup_lane_repo <lane-dir> <repo-path> <claude-md-content>
 #   For with-trigrep: drops .mcp.json (Moderne stdio) + CLAUDE.md.
 #   For no-trigrep:   drops empty-mcp.json.
-#   Both: symlinks start.sh and session-tokens.sh.
+#   Both: symlinks start-agent.sh and session-tokens.sh.
 setup_lane_repo() {
   local lane="$1"
   local path="$2"
@@ -146,14 +146,14 @@ setup_lane_repo() {
     fi
   else
     # The no-trigrep lane explicitly blocks MCP inheritance via
-    # --strict-mcp-config + this empty config (see start.sh).
+    # --strict-mcp-config + this empty config (see start-agent.sh).
     cat > "$target/empty-mcp.json" <<'EOF'
 {
   "mcpServers": {}
 }
 EOF
   fi
-  ln -sf "$SCRIPT_DIR/start.sh"          "$target/start.sh"
+  ln -sf "$SCRIPT_DIR/start-agent.sh"    "$target/start-agent.sh"
   ln -sf "$SCRIPT_DIR/session-tokens.sh" "$target/session-tokens.sh"
 }
 
@@ -193,7 +193,7 @@ fi
 
 echo ""
 echo "==> Init complete."
-echo "    Demo 1 (working-set CLI):    ./demo seq demo1"
+echo "    Demo 1 (working-set CLI):    ./demo cli"
 echo "    Demo 2 (single-repo agent):"
-echo "      media:      ./demo start with media --yolo       /   ./demo start no media --yolo"
-echo "      petclinic:  ./demo start with petclinic --yolo   /   ./demo start no petclinic --yolo"
+echo "      media:      ./demo agent with media --yolo       /   ./demo agent no media --yolo"
+echo "      petclinic:  ./demo agent with petclinic --yolo   /   ./demo agent no petclinic --yolo"

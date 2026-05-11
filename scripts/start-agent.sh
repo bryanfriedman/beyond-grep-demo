@@ -3,12 +3,12 @@
 # Unified launcher for the Demo 2 single-repo agent demo.
 #
 # From the demo root:
-#   ./start.sh no|with [media|petclinic] [--yolo] [extra claude args...]
+#   ./start-agent.sh [no|with] [media|petclinic] [--yolo] [extra claude args...]
 #
 # From a lane's repo dir (via symlink):
-#   ./start.sh [--yolo] [extra claude args...]
+#   ./start-agent.sh [--yolo] [extra claude args...]
 #
-# The repo-key (media|petclinic) defaults to `media`.
+# Defaults: lane = with (inherits user-scope Moderne MCP), repo-key = media.
 
 set -euo pipefail
 
@@ -39,8 +39,11 @@ case "$INVOKED_FROM" in
       exit 1
     fi
 
-    LANE="${1:-}"
-    shift || true
+    # Optional lane, defaults to with.
+    case "${1:-}" in
+      no|with) LANE="$1"; shift ;;
+      *)       LANE="with" ;;
+    esac
 
     # Optional repo key, defaults to media.
     REPO_KEY="media"
@@ -60,7 +63,7 @@ case "$INVOKED_FROM" in
       no)   REPO_DIR="$DEMO_ROOT/no-trigrep/$REPO_PATH" ;;
       with) REPO_DIR="$DEMO_ROOT/with-trigrep/$REPO_PATH" ;;
       *)
-        echo "Usage: $0 no|with [media|petclinic] [--yolo] [extra claude args...]" >&2
+        echo "Usage: $0 [no|with] [media|petclinic] [--yolo] [extra claude args...]" >&2
         exit 1
         ;;
     esac

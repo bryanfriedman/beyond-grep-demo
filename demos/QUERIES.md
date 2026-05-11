@@ -1,6 +1,6 @@
 # Query catalog
 
-A curated list of Trigrep queries to draw from when iterating on Demo 1. The sequence at [sequences/demo1.txt](sequences/demo1.txt) is the playlist; this file is the bench.
+A curated list of Trigrep queries to draw from when iterating on Demo 1. The sequence at [demo.txt](demo.txt) is the playlist; this file is the bench.
 
 `mod search` needs a path argument first. From `working-set/`, use `.`.
 

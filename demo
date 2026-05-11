@@ -23,24 +23,26 @@ Commands:
                                   media lane (recipe leaves a setErrorHandler
                                   call the agent has to fix manually).
 
-  start no|with [media|petclinic] [--yolo] [extra claude args...]
-                                  Launch the agent in a lane.
+  agent [no|with] [media|petclinic] [--yolo] [extra claude args...]
+                                  Launch the agent in a lane. Defaults: with, media.
 
-  seq demo1                       Run the Demo 1 query sequence with the
-                                  press-Enter shell sequencer.
+  cli [<sequence-name>]           Run a CLI demo sequence with the press-Enter
+                                  shell sequencer. Defaults to demos/demo.txt.
 
   tokens <session-id>             Report token usage for a Claude Code session.
 
 Each subcommand also exists as a standalone script in scripts/ and can be
-invoked directly. The lane symlinks for ./start.sh inside no-trigrep/ and
+invoked directly. The lane symlinks for ./start-agent.sh inside no-trigrep/ and
 with-trigrep/ remain functional independently of this dispatcher.
 
 Examples:
   ./demo init
   ./demo reset media
   ./demo trap enable
-  ./demo start with media --yolo
-  ./demo seq demo1
+  ./demo agent                              # = ./demo agent with media
+  ./demo agent with petclinic --yolo
+  ./demo agent no media --yolo
+  ./demo cli                                # = ./demo cli demo (demos/demo.txt)
   ./demo tokens 7f3c1234-…-abcd
 EOF
 }
@@ -58,16 +60,12 @@ case "$cmd" in
   trap)
     exec "$SCRIPTS/trap-mode.sh" "$@"
     ;;
-  start)
-    exec "$SCRIPTS/start.sh" "$@"
+  agent)
+    exec "$SCRIPTS/start-agent.sh" "$@"
     ;;
-  seq)
-    seq_name="${1:-}"
-    if [ -z "$seq_name" ]; then
-      echo "Usage: ./demo seq demo1" >&2
-      exit 1
-    fi
-    seq_file="$SCRIPT_DIR/demos/sequences/${seq_name}.txt"
+  cli)
+    seq_name="${1:-demo}"
+    seq_file="$SCRIPT_DIR/demos/${seq_name}.txt"
     if [ ! -f "$seq_file" ]; then
       echo "Sequence file not found: $seq_file" >&2
       exit 1

@@ -1,0 +1,69 @@
+## Lines starting with `##` are private notes (presenter-only, not rendered).
+## Lines starting with `#` print to `stdout` before waiting for input.
+## Input is pre-populated, but can be edited inline.
+
+## Demo: Trigrep CLI across a working set
+##
+## Two search narrowing progressions with different recipe destinations:
+##  1. Item: search recipe (FindTypes) for FQN-precise inventory
+##  2. RestTemplate: transformation recipe for migration to RestClient
+##
+## (A brief struct interlude in between shows code-shape matching as a capability.)
+
+# Move into the working set so `mod search .` covers the whole portfolio.
+cd working-set
+
+# Show what's actually in the working set (the repos we'll search across).
+mod list .
+
+## CLEAR
+## ── Section 1: Item climb → FindTypes (search recipe) ──────────────────────
+## Premise: "What Item types do we have across services? FQN-precise inventory."
+## Climb: literal → type:symbol → \bItem\b regex → recipe.
+## Ordering note: type:symbol Item still includes *Item* substring matches
+## (ItemRepository etc.), so the \bItem\b regex is the narrowest text-based step.
+## Recipe (FindTypes) is FQN-precise, so it narrows to one specific Item type.
+
+# Broad. Every textual "Item" (the Item classes + ItemRepository + comments + string literals).
+mod search . Item
+
+# Symbol. Narrower than literal but still catches *Item* substrings (ItemRepository, ItemController).
+mod search . type:symbol Item
+
+# Word boundary. Narrowest text-based: only "Item" as a standalone word.
+mod search . '/\bItem\b/'
+
+# Hand to FindTypes. FQN-precise (ewolff catalog's Item here).
+mod run . --last-search --recipe=org.openrewrite.java.search.FindTypes -PfullyQualifiedTypeName=com.ewolff.microservice.catalog.Item
+
+## CLEAR
+## ── Interlude: Struct + LST-filter showcase ────────────────────────────────
+## Queries not tied to either climb. Two flavors:
+##   - Struct: code-shape matching with holes that capture varying content.
+##   - LST filters: semantic queries grep can't ask (extends:, throws:, visibility:, ...).
+
+# Throw-new statements. Match the shape (not the type). :[exception:id] captures different exception types; :[args:e] captures varying message shapes (empty, msg-only, msg + cause).
+mod search . 'struct:throw new :[exception:id](:[args:e])'
+
+# Annotations with parameters. :[ann:id] captures the annotation name (@RequestMapping, @PreAuthorize, @Qualifier, @Cacheable, ...); :[value] captures whatever's inside the parens.
+mod search . 'struct:@:[ann:id](":[value]")'
+
+# Inheritance filter. Every class that directly extends RuntimeException. grep can't ask "extends" semantically.
+mod search . extends:RuntimeException
+
+# Composed filter. Every public method that declares throws IOException. Two LST filters working together.
+mod search . visibility:public throws:IOException
+
+## ── Section 2: RestTemplate climb → migration recipe (transformation) ──────
+## Premise: "Modernize the HTTP-client layer — migrate RestTemplate to RestClient."
+## Climb: literal → type:symbol → migration recipe.
+## The handoff goes to a transformation recipe this time, not a search recipe.
+
+# Broad. Catches OAuth2RestTemplate, RestTemplateBuilder, TestRestTemplate, comments, strings.
+mod search . RestTemplate
+
+# Symbol. Narrows to the symbols containing RestTemplate.
+mod search . type:symbol RestTemplate
+
+# Hand to the migration recipe. (Transformation, not just search.)
+mod run . --last-search --recipe=io.moderne.java.spring.boot3.MigrateRestTemplateToRestClient
