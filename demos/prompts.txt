@@ -15,4 +15,8 @@ What are all the StringUtils classes being used?
 What exception types does this codebase throw, and what arguments do they take?
 Find every class that directly extends BaseEntity.
 Give me a quick inventory of RestTemplate usage in this repo. Where are the call sites, what call shapes show up?
-Now apply the most appropriate migration recipe to convert RestTemplate to RestClient on the mechanical cases. Stop when those are handled — leave anything ambiguous untouched and document what was deferred.
+Now convert RestTemplate to RestClient
+
+
+
+
