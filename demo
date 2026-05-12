@@ -9,24 +9,29 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPTS="$SCRIPT_DIR/scripts"
 
 usage() {
-  cat <<EOF
+  cat <<'EOF'
 Usage: ./demo <command> [args]
 
 Commands:
-  init [--skip-build|--skip-index|--clean|--reset]
+  init [--skip-build|--skip-index|--with-eureka|--clean|--reset]
                                   One-time setup: clone repos, build LSTs, index.
+                                  Pass --with-eureka to also provision Netflix/eureka
+                                  into both lanes (beefier side-by-side option).
 
-  reset [media|petclinic|all]     Per-rehearsal reset of the agent lanes.
-                                  Default target: all.
+  reset [media|petclinic|eureka|all]
+                                  Per-rehearsal reset of the agent lanes.
+                                  Default target: all (eureka reset is skipped
+                                  unless that lane was provisioned).
 
   trap status|enable|disable      Toggle the optional 'trap' variant of the
                                   media lane (recipe leaves a setErrorHandler
                                   call the agent has to fix manually).
 
-  agent [no|with] [media|petclinic] [--ask] [extra claude args...]
+  agent [no|with] [media|petclinic|eureka] [--ask] [extra claude args...]
                                   Launch the agent in a lane. Defaults: with, media,
                                   permissions skipped (yolo). Pass --ask to opt
-                                  into Claude's normal permission prompts.
+                                  into Claude's normal permission prompts. The
+                                  eureka lane requires `./demo init --with-eureka`.
 
   cli [<sequence-name>]           Run a CLI demo sequence with the press-Enter
                                   shell sequencer. Defaults to demos/demo.txt.
@@ -44,6 +49,7 @@ Examples:
   ./demo agent                              # = ./demo agent with media (yolo)
   ./demo agent with petclinic
   ./demo agent no media
+  ./demo agent with eureka                  # requires ./demo init --with-eureka
   ./demo agent --ask                        # opt into permission prompts
   ./demo cli                                # = ./demo cli demo (demos/demo.txt)
   ./demo tokens 7f3c1234-…-abcd

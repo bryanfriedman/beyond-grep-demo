@@ -2,8 +2,8 @@
 #
 # Reset the Demo 2 agent lanes between rehearsals.
 #
-# Usage: ./reset-agent.sh [media|petclinic|all]
-#   default: all
+# Usage: ./reset-agent.sh [media|petclinic|eureka|all]
+#   default: all (skips eureka if the lane wasn't provisioned)
 #
 # What it does, per lane:
 #   1. `git checkout -- .` to undo any source edits the agent made
@@ -27,6 +27,7 @@ TARGET="${1:-all}"
 
 MEDIA_PATH="streamlist/media-aggregator"
 PETCLINIC_PATH="spring-projects/spring-petclinic"
+EUREKA_PATH="Netflix/eureka"
 
 reset_one() {
   local lane="$1"   # no-trigrep or with-trigrep
@@ -66,6 +67,12 @@ case "$TARGET" in
     reset_one "with-trigrep" "$PETCLINIC_PATH"
     prebuild_with_trigrep    "$PETCLINIC_PATH"
     ;;
+  eureka)
+    echo "==> Resetting eureka lane"
+    reset_one "no-trigrep"   "$EUREKA_PATH"
+    reset_one "with-trigrep" "$EUREKA_PATH"
+    prebuild_with_trigrep    "$EUREKA_PATH"
+    ;;
   all)
     echo "==> Resetting all agent lanes"
     reset_one "no-trigrep"   "$MEDIA_PATH"
@@ -74,9 +81,15 @@ case "$TARGET" in
     reset_one "with-trigrep" "$PETCLINIC_PATH"
     prebuild_with_trigrep    "$MEDIA_PATH"
     prebuild_with_trigrep    "$PETCLINIC_PATH"
+    # eureka is opt-in (--with-eureka in init); only reset if provisioned.
+    if [ -d "$DEMO_ROOT/with-trigrep/$EUREKA_PATH" ] || [ -d "$DEMO_ROOT/no-trigrep/$EUREKA_PATH" ]; then
+      reset_one "no-trigrep"   "$EUREKA_PATH"
+      reset_one "with-trigrep" "$EUREKA_PATH"
+      prebuild_with_trigrep    "$EUREKA_PATH"
+    fi
     ;;
   *)
-    echo "Usage: $0 [media|petclinic|all]" >&2
+    echo "Usage: $0 [media|petclinic|eureka|all]" >&2
     exit 1
     ;;
 esac

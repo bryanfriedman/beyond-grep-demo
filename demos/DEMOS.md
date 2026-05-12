@@ -8,7 +8,7 @@ Two demos, same handoff pattern (search narrows, recipe acts), different surface
 
 | # | Demo | What it shows | Surface | Where it runs |
 |---|------|---------------|---------|---------------|
-| 1 | Trigrep CLI across the working set | Two climbs, two recipe destinations via `--last-search`: search recipe (Item inventory) and transformation recipe (RestTemplate migration) | `mod search` → `mod run --last-search` | `working-set/` via [demo.txt](demo.txt) |
+| 1 | Trigrep CLI across the working set | Two climbs, two recipe destinations via `--last-search`: search recipe (Item inventory) and transformation recipe (javax → jakarta migration) | `mod search` → `mod run --last-search` | `working-set/` via [demo.txt](demo.txt) |
 | 2 | Agent with Moderne MCP on a single repo | Trigrep first-cut, then user follow-up triggers a recipe — two examples mirroring Demo 1's two recipe destinations | Claude Code | `./demo agent with petclinic` and `./demo agent with media` |
 
 A separate platform-only opener (a recipe run from the Moderne UI) is performed live and is not scaffolded here. It establishes "recipes work" — the rest of the talk is *how the platform engineer gets to a recipe* (Demo 1) and *how an agent picks one up* (Demo 2).
@@ -17,7 +17,7 @@ A separate platform-only opener (a recipe run from the Moderne UI) is performed 
 
 Both demos demonstrate the same escalation: **Trigrep narrows fast, a recipe gives the precise answer.** And both demos show the same two recipe destinations — search recipes (precise inventory) and transformation recipes (migration).
 
-- **Demo 1** runs both destinations in the CLI: Section 1's Item climb hands off to a search recipe (`FindTypes`); Section 2's RestTemplate climb hands off to a transformation recipe (migration to `RestClient`).
+- **Demo 1** runs both destinations in the CLI: Section 1's Item climb hands off to a search recipe (`FindTypes`); Section 2's javax climb hands off to a transformation recipe (migration of `javax.*` imports to `jakarta.*`).
 - **Demo 2** shows the agent picking tools by question: petclinic uses Trigrep alone (`trigrep_search` and `trigrep_structural_search`) for fast exploratory questions where a recipe would be overkill; media does the full inventory-plus-transformation flow, escalating from Trigrep through `find_*` to the migration recipe.
 
 Search and recipes aren't separate tools you bolt together. They're projections of the same LST that hand off to each other, regardless of who's driving — human in the CLI or agent through MCP.
@@ -36,7 +36,7 @@ Clones the working set, provisions both Demo 2 single-repo lanes, builds LSTs, a
 
 ## Demo 1 — Trigrep CLI across the working set
 
-> **Scenario:** "I'm a platform engineer at a Spring shop. Leadership says modernize. Two specific items on my plate: I need an inventory of where `Item`-like domain types live across services (which services own which), and the HTTP-client modernization — `RestTemplate` is in maintenance mode, new code should be `RestClient`. I want to climb from 'find a string' to 'find a code shape' without changing tools, then narrow to a precise recipe pass — sometimes for inventory, sometimes for transformation."
+> **Scenario:** "I'm a platform engineer at a Spring shop. Leadership says modernize. Two specific items on my plate: I need an inventory of where `Item`-like domain types live across services (which services own which), and the Jakarta EE rename — `javax.*` imports need to become `jakarta.*` so we can move to Spring 6 / Boot 3. I want to climb from 'find a string' to 'find a code shape' without changing tools, then narrow to a precise recipe pass — sometimes for inventory, sometimes for transformation."
 
 **What the demo proves:** Trigrep supports breadth of search types (literal, regex, `type:symbol`, structural patterns), AND it hands off to *two* recipe destinations via `--last-search` — search recipes (precise inventory) and transformation recipes (migration). All on the same LST, no reparsing, no tool switch.
 
@@ -75,17 +75,17 @@ Queries not tied to either climb, demonstrating two flavors of LST-aware searchi
 
 The interlude is orthogonal to both threads — its job is to land "Trigrep does code-shape and semantic-property searches the climbs didn't have room for" before we go back to thread-driven narrowing.
 
-### Section 2 — RestTemplate climb, transformation-recipe handoff (~3 min)
+### Section 2 — javax → jakarta climb, transformation-recipe handoff (~3 min)
 
-Same climb shape as Section 1, different destination — the recipe here is a *transformation*, not a search. The diff at the end is what the audience sees, not just a structured list.
+Same climb shape as Section 1, different destination — the recipe here is a *transformation*, not a search. The diff at the end is what the audience sees, not just a structured list. And unlike the Item climb, the visible payoff of `--last-search` here is *which repos get touched*: javax imports live in 3 of 4 working-set repos (ewolff, mall, piggymetrics); petclinic-microservices already migrated to jakarta and gets silently skipped.
 
 Starting progression:
 
-- Broad — every textual `RestTemplate` (the real type, plus look-alikes like `OAuth2RestTemplate`, `RestTemplateBuilder`, `TestRestTemplate`, comments, strings) — `mod search . RestTemplate`
-- Symbol — narrows to the `RestTemplate` symbol (still has some substring leakage) — `mod search . type:symbol RestTemplate`
-- Hand to the migration recipe — `mod run . --last-search --recipe=io.moderne.java.spring.boot3.MigrateRestTemplateToRestClient`
+- Broadest — every textual `javax` (Java source, `pom.xml`/`build.gradle` deps, comments) — `mod search . javax`
+- Narrow to source files — drops build-file matches; only `.java` content remains — `mod search . javax file:java`
+- Hand to the migration recipe — `mod run . --last-search --recipe=org.openrewrite.java.migrate.jakarta.JavaxMigrationToJakarta`
 
-What the migration recipe adds: the actual transformation. Calls get rewritten, imports get updated, the diff is the destination. Demo 2 will pick up the same pattern with the agent.
+What the migration recipe adds: the actual transformation. `javax.*` import statements get rewritten to `jakarta.*`, dependency coordinates in build files get bumped, and the diff is the destination. Demo 2 will pick up the same pattern (search → transformation recipe) with the agent — at media, the migration target is the related `RestTemplate` → `RestClient` modernization.
 
 > Closing line for Demo 1: *"Two climbs, two destinations. One ended in a search recipe for precise inventory; the other ended in a transformation. Same handoff pattern, two different recipe types — exactly the shape Demo 2 mirrors with the agent."*
 
@@ -192,6 +192,28 @@ Run the same prompts against the `no-trigrep/` lane (zero MCP servers via `empty
 ./demo agent no media        # or `no petclinic`
 ./demo tokens <session-id>          # run for both sessions, after capturing the IDs
 ```
+
+**Beefier option — `Netflix/eureka`.** The token delta on `media` and `petclinic` is real but not dramatic — both repos are small enough that grep + read-each-file finishes without much pain. For a more visible delta, provision the optional `eureka` lane:
+
+```bash
+./demo init --with-eureka              # one-time: clones into both lanes, builds with-trigrep LST
+./demo agent with eureka
+./demo agent no eureka
+```
+
+`Netflix/eureka` is a multi-module Gradle Java project (the Spring Cloud service-registry library) — recognizable in the Spring world, big enough that the grep-fallback agent reads a lot more files to assemble the same answers. Because it's Gradle, the full MCP toolset works (no Maven `modmaven-metadata` flake).
+
+**Prompt (run identically in both lanes):**
+
+```
+If I modify the InstanceInfo class, what other classes and services would be affected?
+```
+
+`InstanceInfo` is core eureka — the canonical service-registration metadata class with heavy fan-out across the codebase. A realistic refactor-impact question a platform engineer would actually ask.
+
+What you're watching for in **with-trigrep**: the agent should open with `trigrep_search` to scout (`InstanceInfo` plus possibly LST-flavored filters like `extends:InstanceInfo`), then legitimately escalate to `find_types` for precise type-FQN reference scope. That's the CLAUDE.md "trigrep first, `find_*` only on escalation" policy in action — `find_types` is the right tool here, not a regression. If the agent stops at direct references and doesn't explore transitive impact (call sites of methods that consume `InstanceInfo`), append *"include the transitive impact, not just direct usages"* to force the deeper pass.
+
+What you're watching for in **no-trigrep**: grep on `InstanceInfo`, then read-each-file to disambiguate type references from incidental variable names, then trace through fields/parameters/return types. That's where the token cost piles up — and it's the number to quote live via `./demo tokens <session-id>` for each session.
 
 ---
 

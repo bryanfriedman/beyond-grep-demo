@@ -3,7 +3,7 @@
 # Unified launcher for the Demo 2 single-repo agent demo.
 #
 # From the demo root:
-#   ./start-agent.sh [no|with] [media|petclinic] [--ask] [extra claude args...]
+#   ./start-agent.sh [no|with] [media|petclinic|eureka] [--ask] [extra claude args...]
 #
 # From a lane's repo dir (via symlink):
 #   ./start-agent.sh [--ask] [extra claude args...]
@@ -19,6 +19,7 @@ INVOKED_FROM="$(cd "$(dirname "$0")" && pwd)"
 # Repo key → repo path mapping.
 REPO_PATH_media="streamlist/media-aggregator"
 REPO_PATH_petclinic="spring-projects/spring-petclinic"
+REPO_PATH_eureka="Netflix/eureka"
 
 case "$INVOKED_FROM" in
   */no-trigrep/*)
@@ -50,14 +51,14 @@ case "$INVOKED_FROM" in
     # Optional repo key, defaults to media.
     REPO_KEY="media"
     case "${1:-}" in
-      media|petclinic) REPO_KEY="$1"; shift ;;
+      media|petclinic|eureka) REPO_KEY="$1"; shift ;;
     esac
 
     # Resolve repo path from the key.
     var="REPO_PATH_${REPO_KEY}"
     REPO_PATH="${!var:-}"
     if [ -z "$REPO_PATH" ]; then
-      echo "Unknown repo key: $REPO_KEY (expected media|petclinic)" >&2
+      echo "Unknown repo key: $REPO_KEY (expected media|petclinic|eureka)" >&2
       exit 1
     fi
 
@@ -65,7 +66,7 @@ case "$INVOKED_FROM" in
       no)   REPO_DIR="$DEMO_ROOT/no-trigrep/$REPO_PATH" ;;
       with) REPO_DIR="$DEMO_ROOT/with-trigrep/$REPO_PATH" ;;
       *)
-        echo "Usage: $0 [no|with] [media|petclinic] [--ask] [extra claude args...]" >&2
+        echo "Usage: $0 [no|with] [media|petclinic|eureka] [--ask] [extra claude args...]" >&2
         exit 1
         ;;
     esac
@@ -74,7 +75,11 @@ esac
 
 if [ ! -d "$REPO_DIR" ]; then
   echo "Lane repo dir not found: $REPO_DIR" >&2
-  echo "Did you run ./init.sh?" >&2
+  if [[ "$REPO_DIR" == *"/Netflix/eureka" ]]; then
+    echo "The eureka lane is opt-in. Provision with: ./demo init --with-eureka" >&2
+  else
+    echo "Did you run ./init.sh?" >&2
+  fi
   exit 1
 fi
 

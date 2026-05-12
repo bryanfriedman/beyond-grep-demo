@@ -55,16 +55,19 @@ mod search . extends:RuntimeException
 mod search . visibility:public throws:IOException
 
 ## CLEAR
-## ── Section 2: RestTemplate climb → migration recipe (transformation) ──────
-## Premise: "Modernize the HTTP-client layer — migrate RestTemplate to RestClient."
-## Climb: literal → type:symbol → migration recipe.
+## ── Section 2: javax → jakarta climb → migration recipe (transformation) ───
+## Premise: "Modernize for Spring 6 / Boot 3 — javax.* imports become jakarta.*."
+## Climb: literal → narrow to .java only → migration recipe.
 ## The handoff goes to a transformation recipe this time, not a search recipe.
+## --last-search scopes to the 3 of 4 repos still on javax (ewolff, mall, piggymetrics);
+## petclinic-microservices (already migrated to jakarta) is silently skipped —
+## that's the visible narrowing payoff over running the recipe unscoped.
 
-# Broad. Catches OAuth2RestTemplate, RestTemplateBuilder, TestRestTemplate, comments, strings.
-mod search . RestTemplate
+# Broadest. Every textual "javax" — Java source, pom.xml/build.gradle deps, comments.
+mod search . javax
 
-# Symbol. Narrows to the symbols containing RestTemplate.
-mod search . type:symbol RestTemplate
+# Narrow to .java only. Drops build-file matches.
+mod search . javax file:java
 
-# Hand to the migration recipe. (Transformation, not just search.)
-mod run . --last-search --recipe=io.moderne.java.spring.boot3.MigrateRestTemplateToRestClient
+# Hand to the migration recipe. --last-search scopes to repos that have javax (3 of 4).
+mod run . --last-search --recipe=org.openrewrite.java.migrate.jakarta.JavaxMigrationToJakarta

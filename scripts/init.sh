@@ -9,10 +9,15 @@
 # modmaven-metadata bug that breaks MCP type resolution on Maven repos.
 # Builds LSTs so `mod search` and `mod mcp` have something to query against.
 #
-# Usage: ./init.sh [--skip-build] [--skip-index] [--clean] [--reset]
+# Usage: ./init.sh [--skip-build] [--skip-index] [--with-eureka] [--clean] [--reset]
 #   --skip-build          Clone only; don't run `mod build`
 #   --skip-index          Skip `mod postbuild search index` (useful if you want
 #                         to run it live during the demo as a setup reveal)
+#   --with-eureka         Also provision Netflix/eureka into both lanes for
+#                         the side-by-side token-delta demo. Off by default
+#                         because the clone + LST build adds time to init —
+#                         only enable when you intend to run the no-trigrep vs
+#                         with-trigrep comparison on a beefier repo.
 #   --clean               Remove cloned repos and .moderne artifacts, then exit
 #   --reset               Clean and re-initialize (equivalent to --clean + init)
 
@@ -42,8 +47,17 @@ PETCLINIC_PATH="spring-projects/spring-petclinic"
 PETCLINIC_SOURCE="git:https://github.com/spring-projects/spring-petclinic.git"
 PETCLINIC_BRANCH="main"
 
+# Beefy third lane, opt-in via --with-eureka. Used for the side-by-side
+# token-delta variant where the two small repos don't produce a dramatic-enough
+# grep-fallback climb. Gradle build, so the full MCP toolset (find_types et al.)
+# works in addition to trigrep_search / trigrep_structural_search.
+EUREKA_PATH="Netflix/eureka"
+EUREKA_SOURCE="git:https://github.com/Netflix/eureka.git"
+EUREKA_BRANCH="master"
+
 SKIP_BUILD=false
 SKIP_INDEX=false
+WITH_EUREKA=false
 CLEAN=false
 RESET=false
 
@@ -51,10 +65,11 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-build) SKIP_BUILD=true; shift ;;
     --skip-index) SKIP_INDEX=true; shift ;;
+    --with-eureka) WITH_EUREKA=true; shift ;;
     --clean)      CLEAN=true; shift ;;
     --reset)      CLEAN=true; RESET=true; shift ;;
     -h|--help)
-      sed -n '3,17p' "$0"
+      sed -n '3,22p' "$0"
       exit 0
       ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -133,6 +148,9 @@ provision_repo() {
 for lane in "$NO_DIR" "$WITH_DIR"; do
   provision_repo "$lane" "$MEDIA_PATH"   "$MEDIA_SOURCE"   "$MEDIA_BRANCH"
   provision_repo "$lane" "$PETCLINIC_PATH" "$PETCLINIC_SOURCE" "$PETCLINIC_BRANCH"
+  if [ "$WITH_EUREKA" = true ]; then
+    provision_repo "$lane" "$EUREKA_PATH" "$EUREKA_SOURCE" "$EUREKA_BRANCH"
+  fi
 done
 
 # ─── per-repo lane setup (configs, symlinks, CLAUDE.md) ───────────────────────
@@ -178,6 +196,9 @@ PETCLINIC_CLAUDE_MD=''
 for lane in "$NO_DIR" "$WITH_DIR"; do
   setup_lane_repo "$lane" "$MEDIA_PATH"   "$MEDIA_CLAUDE_MD"
   setup_lane_repo "$lane" "$PETCLINIC_PATH" "$PETCLINIC_CLAUDE_MD"
+  if [ "$WITH_EUREKA" = true ]; then
+    setup_lane_repo "$lane" "$EUREKA_PATH" ""
+  fi
 done
 
 # ─── builds and indexes ───────────────────────────────────────────────────────
@@ -208,3 +229,6 @@ echo "    Demo 1 (working-set CLI):    ./demo cli"
 echo "    Demo 2 (single-repo agent):"
 echo "      media:      ./demo agent with media       /   ./demo agent no media"
 echo "      petclinic:  ./demo agent with petclinic   /   ./demo agent no petclinic"
+if [ "$WITH_EUREKA" = true ]; then
+  echo "      eureka:     ./demo agent with eureka      /   ./demo agent no eureka"
+fi
