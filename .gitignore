@@ -18,3 +18,8 @@ with-trigrep/
 *~
 *.swp
 *.swo
+
+# Compiled output from the curated demo app (reproducible build artifacts)
+media-aggregator-app/bin/
+media-aggregator-app/build/
+media-aggregator-app/.gradle/

@@ -9,6 +9,8 @@ Demo materials for the _Beyond grep: how semantic code search makes large-scale 
 
 Demos run live; the side-by-side `no-trigrep/` lane and `./demo tokens` are there as a backup / cost-comparison option, not the default flow.
 
+> See [CLAUDE.md](CLAUDE.md) for the maintainer brief, the keep-these-separate use cases, and the measured cost baseline.
+
 ## Prerequisites
 
 - [Moderne CLI](https://docs.moderne.io/moderne-cli/getting-started/cli-intro) (`mod`) installed and authenticated
@@ -47,6 +49,7 @@ Flags:
 ```
 .
 ├── README.md                       # this file
+├── CLAUDE.md                       # maintainer brief: Trigrep basics, constraints, measured baseline
 ├── repos.csv                       # working set (Demo 1)
 ├── demo                            # master entry point; dispatches to scripts/
 ├── demos/

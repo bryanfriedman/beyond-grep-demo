@@ -68,6 +68,33 @@ mod run . --last-search --recipe=org.openrewrite.java.search.FindTypes \
   -PfullyQualifiedTypeName=org.springframework.web.client.RestTemplate
 ```
 
+## Demo 2 bench — eureka single-repo (agent's Trigrep moves)
+
+For the optional `Netflix/eureka` cost-comparison lane (`./demo init
+--with-eureka`). These are the queries the *agent* composes through MCP when
+answering "if I modify `InstanceInfo`, what's affected?" — useful to rehearse by
+hand so you know what good looks like before watching the agent. Run from
+`with-trigrep/Netflix/eureka` with `.` as the path.
+
+```bash
+mod search . sym:InstanceInfo                 # central service-registration metadata class
+mod search . sym:EurekaClient                 # core client interface
+mod search . extends:AbstractInstanceRegistry  # registry implementations (direct extenders)
+mod search . visibility:public returns:InstanceInfo   # methods that hand back an InstanceInfo
+mod search . throws:IOException               # exception surface across the registry
+```
+
+Grep contrast for the talk: `grep -rn "InstanceInfo" .` returns hundreds of hits
+— imports, comments, tests, string constants — so a grep-only agent has to read
+each file to confirm which are real type references. `sym:InstanceInfo` resolves
+to the symbol directly, and `find_types InstanceInfo` (the agent's escalation)
+gives FQN-precise reference scope. That skipped read loop is the ~16×-fewer-token
+delta recorded in [../CLAUDE.md](../CLAUDE.md).
+
+> Don't reach for a `visibility:public type:method` "public API surface" query
+> here — `type:method` is a silent no-op in CLI 4.2.x. Lean on `returns:` /
+> `throws:` / `visibility:` as shown above.
+
 ## CLI 4.x query rules worth memorizing
 
 - **Filters must be separate shell args** — never quote the whole query into one string. The CLI treats a single-arg query as a literal phrase (it re-emits it quoted in the `Searching for:` line) and almost always returns 0 matches.

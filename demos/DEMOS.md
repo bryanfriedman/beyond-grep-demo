@@ -215,6 +215,17 @@ What you're watching for in **with-trigrep**: the agent should open with `trigre
 
 What you're watching for in **no-trigrep**: grep on `InstanceInfo`, then read-each-file to disambiguate type references from incidental variable names, then trace through fields/parameters/return types. That's where the token cost piles up — and it's the number to quote live via `./demo tokens <session-id>` for each session.
 
+**Recorded baseline (eureka, same prompt).** A prior measured run, for reference if you can't capture fresh numbers live:
+
+| Metric            | Without Trigrep   | With Trigrep |
+|-------------------|-------------------|--------------|
+| Total tokens      | ~4.4M (4,388,922) | ~271K (270,959) |
+| Tool calls        | 84                | 7            |
+| Subagents spawned | 1                 | 0            |
+| **Reduction**     |                   | **~16× fewer tokens, ~12× fewer tool calls** |
+
+Treat these as illustrative, not guaranteed — agent behavior varies run to run. Re-measure with `./demo tokens <session-id>` and quote your live numbers; fall back to these if a session goes sideways. See [../CLAUDE.md](../CLAUDE.md) for the measurement context.
+
 ---
 
 ## Troubleshooting
